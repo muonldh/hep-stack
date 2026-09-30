@@ -1,0 +1,26 @@
+# Runs the full installer on a clean Ubuntu machine provided by GitHub.
+# A green badge in the README means the install works as of the last run.
+name: install-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "0 3 * * 1"   # every Monday, catches breakage from upstream package updates
+  workflow_dispatch:       # adds a "Run workflow" button in the Actions tab
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h "$HOME"
+
+      - name: Run installer
+        run: bash install.sh --yes
