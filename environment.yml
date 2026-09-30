@@ -25,7 +25,7 @@ dependencies:
   - log4cpp
   - libxml2-devel
 
- # Needed to build your own Geant4 applications
+  # Needed to build your own Geant4 applications
   - cmake
   - expat
   - freetype
