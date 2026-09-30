@@ -155,6 +155,18 @@ The full installation is tested automatically on a clean Ubuntu 24.04 machine by
 | `xdg-open: not found` when opening a TBrowser | Run `echo "Browser.Name: TRootBrowser" >> ~/.rootrc` (the installer does this automatically on WSL). |
 | Geant4 or ROOT windows do not open on WSL | Graphics need Windows 11 (WSLg). Batch jobs work without it. |
 
+## Reporting problems
+
+If the installer fails or something does not work:
+
+1. Go to the [Issues page](https://github.com/muonldh/hep-stack/issues) and click **New issue**. You need a free GitHub account.
+2. Give it a short title, for example "GENIE build fails on Ubuntu 22.04".
+3. In the description, include:
+   - your system (run `lsb_release -a` and paste the output)
+   - whether you use WSL or native Ubuntu
+   - the command you ran
+   - the last 30 or so lines of the error output
+
 ## License
 
 The scripts in this repository are released under the [MIT License](LICENSE).
