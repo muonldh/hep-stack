@@ -91,7 +91,21 @@ bash "$REPO_DIR/scripts/build_genie.sh" "${GENIE_ARGS[@]}"
 conda deactivate
 conda activate "$ENV_NAME"
 
-# --- 4. Optional auto-activation ----------------------------------------------
+# --- 4. NuCraft (only if bundled in extern/nucraft) ---------------------------
+say "Installing NuCraft"
+bash "$REPO_DIR/scripts/install_nucraft.sh"
+
+# --- 5. WSL: use ROOT's classic browser --------------------------------------
+# ROOT's web-based TBrowser needs a Linux web browser, which WSL does not have.
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    touch "$HOME/.rootrc"
+    if ! grep -q '^Browser.Name:' "$HOME/.rootrc"; then
+        echo "Browser.Name: TRootBrowser" >> "$HOME/.rootrc"
+        echo "WSL detected: set ROOT to use the classic TBrowser (~/.rootrc)."
+    fi
+fi
+
+# --- 6. Optional auto-activation ----------------------------------------------
 BEGIN="# >>> hep-stack auto-activate >>>"
 END="# <<< hep-stack auto-activate <<<"
 sed -i "/$BEGIN/,/$END/d" "$HOME/.bashrc"
@@ -99,7 +113,7 @@ if [ "$AUTO_ACTIVATE" = 1 ]; then
     printf '%s\nconda activate %s\n%s\n' "$BEGIN" "$ENV_NAME" "$END" >> "$HOME/.bashrc"
 fi
 
-# --- 5. Check ----------------------------------------------------------------
+# --- 7. Check ----------------------------------------------------------------
 say "Checking the installation"
 bash "$REPO_DIR/scripts/check_install.sh"
 

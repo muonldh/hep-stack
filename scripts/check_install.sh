@@ -35,6 +35,9 @@ check "Pythia 8"  test -f "$CONDA_PREFIX/include/Pythia8/Pythia.h"
 check "LHAPDF"    lhapdf-config --version
 check "GENIE"     genie_ok
 check "Python"    python -c "import numpy, scipy, pandas, matplotlib, uproot, awkward, hist, mplhep, iminuit; print('scientific stack ok')"
+if [ -d "$CONDA_PREFIX/opt/nucraft" ]; then
+    check "NuCraft"   python -c "import NuCraft; print(NuCraft.__file__)"
+fi
 
 echo ""
 echo "$PASS passed, $FAIL failed"
