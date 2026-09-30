@@ -25,6 +25,15 @@ dependencies:
   - log4cpp
   - libxml2-devel
 
+ # Needed to build your own Geant4 applications
+  - cmake
+  - expat
+  - freetype
+  - zlib
+  - qt6-main
+  - xorg-libx11
+  - xorg-libxmu
+
   # Python analysis stack (Scikit-HEP and friends)
   - numpy
   - scipy
