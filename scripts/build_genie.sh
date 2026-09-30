@@ -32,7 +32,11 @@ if [ -f "$STAMP" ] && [ "$REBUILD" = 0 ]; then
     exit 0
 fi
 
-for tool in root-config gsl-config lhapdf-config "$CXX"; do
+# Use the environment's own compilers, even if activation did not set CXX/CC.
+CXX="${CXX:-$P/bin/x86_64-conda-linux-gnu-c++}"
+CC="${CC:-$P/bin/x86_64-conda-linux-gnu-gcc}"
+
+for tool in root-config gsl-config lhapdf-config "$CXX" "$CC"; do
     command -v "$tool" >/dev/null || { echo "Missing $tool in the environment."; exit 1; }
 done
 
