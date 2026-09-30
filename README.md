@@ -1,0 +1,147 @@
+# hep-stack
+
+[!\[install-test](https://github.com/muonldh/hep-stack/actions/workflows/install-test.yml/badge.svg)](https://github.com/USERNAME/hep-stack/actions/workflows/install-test.yml)
+
+One command to install a complete high energy physics software environment on Linux or Windows (WSL):
+ROOT, Geant4, Pythia 8, LHAPDF, the GENIE neutrino event generator, and the Scikit-HEP Python analysis tools.
+
+No compiling ROOT for an hour, no sudo, no editing paths by hand.
+
+## What you get
+
+|Software|Purpose|How it is installed|
+|-|-|-|
+|[ROOT](https://root.cern)|Data analysis framework, PyROOT|conda-forge package|
+|[Geant4](https://geant4.web.cern.ch) + data sets|Detector simulation|conda-forge package|
+|[Pythia 8](https://pythia.org)|Event generation, hadronization|conda-forge package|
+|[LHAPDF 6](https://lhapdf.hepforge.org)|Parton distribution functions|conda-forge package|
+|[GENIE](https://github.com/GENIE-MC/Generator) (R-3\_06\_02)|Neutrino event generator|compiled by `scripts/build\_genie.sh`|
+|numpy, scipy, pandas, matplotlib, JupyterLab|General scientific Python|conda-forge packages|
+|uproot, awkward, hist, mplhep, iminuit, vector, particle|[Scikit-HEP](https://scikit-hep.org) analysis tools|conda-forge packages|
+
+Everything lives in one conda environment called `hep`, so it cannot interfere with the rest of your system.
+
+## Quick start
+
+```bash
+git clone https://github.com/muonldh/hep-stack.git
+cd hep-stack
+bash install.sh
+```
+
+The first run takes about 30 to 45 minutes and needs about 15 GB of disk space.
+When it finishes, open a new terminal and run:
+
+```bash
+conda activate hep
+```
+
+Your prompt now starts with `(hep)` and all the software is available. Type `conda deactivate` to leave.
+
+If you would rather have `hep` active in every new terminal automatically, install with:
+
+```bash
+bash install.sh --auto-activate
+```
+
+## Never used Linux before? Start here
+
+**On Windows**, you first need WSL, which runs Ubuntu inside Windows:
+
+1. Open **PowerShell as Administrator** and run `wsl --install -d Ubuntu-24.04`
+2. Restart your computer when asked.
+3. Open **Ubuntu** from the Start menu and choose a muonldh and password.
+4. Inside the Ubuntu window, run `sudo apt update \&\& sudo apt install -y git curl`
+5. Continue with the Quick start above.
+
+**On Ubuntu or another Linux distribution**, make sure `git` and `curl` are installed, then go straight to the Quick start.
+
+A few terms you will see:
+
+* **Terminal**: the window where you type commands.
+* **conda**: a package manager that downloads ready-built scientific software. The installer sets it up for you (through [Miniforge](https://github.com/conda-forge/miniforge)) if you do not have it.
+* **Environment**: an isolated set of software. `conda activate hep` switches it on.
+
+## Check that everything works
+
+```bash
+conda activate hep
+bash scripts/check\_install.sh
+```
+
+Expected output:
+
+```
+  \[ok]   ROOT           6.xx.xx
+  \[ok]   PyROOT         6.xx/xx
+  \[ok]   Geant4         11.x.x
+  ...
+8 passed, 0 failed
+```
+
+## Using GENIE
+
+After `conda activate hep`, the `GENIE` variable is set and programs such as `gevgen` and `gevgen\_atmo` are on your path.
+Event generation needs precomputed cross-section splines for your chosen tune. These are distributed by the GENIE
+collaboration; see [genie-mc.org](http://genie-mc.org) and the GENIE Physics \& User Manual.
+
+To build a different GENIE release or enable extra features:
+
+```bash
+conda activate hep
+GENIE\_VERSION=R-3\_06\_02 GENIE\_EXTRA\_FLAGS="--enable-t2k" bash scripts/build\_genie.sh --rebuild
+```
+
+## Adding more software
+
+Add the package name to `environment.yml`, then rerun `bash install.sh`. It updates the existing environment instead of starting over.
+You can search for available packages at [prefix.dev](https://prefix.dev/channels/conda-forge).
+
+## Updating and uninstalling
+
+Update everything to the latest package versions:
+
+```bash
+bash install.sh
+```
+
+Remove the environment completely:
+
+```bash
+conda deactivate
+conda env remove -n hep
+```
+
+Miniforge itself lives in `\~/miniforge3`. To remove it as well, delete that folder and the `conda initialize` block in `\~/.bashrc`.
+
+## How it works
+
+1. **Conda.** `install.sh` finds an existing conda installation or installs Miniforge.
+2. **Environment.** It creates the `hep` environment from `environment.yml`, using only the community-maintained [conda-forge](https://conda-forge.org) channel.
+3. **GENIE.** GENIE is not available as a conda package, so `scripts/build\_genie.sh` compiles it inside the environment with the environment's own compilers and libraries. It then registers conda activation hooks, so `conda activate hep` sets `GENIE`, `PATH` and `LD\_LIBRARY\_PATH` for you.
+4. **Test.** `scripts/check\_install.sh` verifies each component.
+
+The full installation is tested automatically on a clean Ubuntu 24.04 machine by
+[GitHub Actions](.github/workflows/install-test.yml) on every change and once a week.
+
+## Notes
+
+* **Pythia 6 is not available on conda-forge.** GENIE is therefore built with Pythia 8, and its configuration is switched to the Pythia 8 hadronization and decay algorithms. Tunes were originally fitted with Pythia 6, so validate against a reference sample if your analysis is sensitive to hadronization.
+* **Versions follow conda-forge.** ROOT, Geant4 and the other packages get the latest compatible release. To freeze an exact working set for a paper or thesis, run `conda env export -n hep > environment.lock.yml` and keep that file.
+* **Platform.** Linux and WSL on x86\_64. GENIE's build system does not support other architectures.
+
+## Troubleshooting
+
+|Problem|Fix|
+|-|-|
+|`conda: command not found`|Open a new terminal. The installer only updates `\~/.bashrc`, which new terminals read.|
+|Installer stops during "Creating environment"|Usually a network drop. Run `bash install.sh` again; it continues from where it stopped.|
+|Build is killed or the computer freezes while compiling GENIE|Not enough RAM for parallel builds. Run `JOBS=2 bash install.sh`.|
+|Geant4 or ROOT windows do not open on WSL|Graphics need Windows 11 (WSLg). Batch jobs work without it.|
+
+## License
+
+The scripts in this repository are released under the [MIT License](LICENSE).
+ROOT, Geant4, Pythia, LHAPDF and GENIE are separate projects under their own licenses.
+If you use them in published work, cite them as their authors request.
+

@@ -1,0 +1,40 @@
+# Conda environment for high energy physics work.
+# Everything here is a prebuilt package from conda-forge.
+# GENIE is not on conda-forge; scripts/build_genie.sh compiles it inside this environment.
+
+name: hep
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12
+
+  # Core HEP software
+  - root
+  - geant4
+  - pythia8
+  - lhapdf
+
+  # Needed to compile GENIE
+  - c-compiler
+  - cxx-compiler
+  - make
+  - perl
+  - git
+  - gsl
+  - log4cpp
+  - libxml2-devel
+
+  # Python analysis stack (Scikit-HEP and friends)
+  - numpy
+  - scipy
+  - pandas
+  - matplotlib
+  - jupyterlab
+  - uproot
+  - awkward
+  - hist
+  - mplhep
+  - iminuit
+  - vector
+  - particle

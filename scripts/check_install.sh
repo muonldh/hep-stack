@@ -1,0 +1,41 @@
+#!/bin/bash
+# Quick health check of the HEP environment. Run with the environment active:
+#   conda activate hep && bash scripts/check_install.sh
+
+PASS=0
+FAIL=0
+
+check() {
+    local name="$1"; shift
+    local out
+    if out="$("$@" 2>&1)"; then
+        printf '  \033[32m[ok]\033[0m   %-14s %s\n' "$name" "$(head -n1 <<< "$out")"
+        PASS=$((PASS+1))
+    else
+        printf '  \033[31m[fail]\033[0m %-14s %s\n' "$name" "$(tail -n1 <<< "$out")"
+        FAIL=$((FAIL+1))
+    fi
+}
+
+genie_ok() {
+    [ -n "${GENIE:-}" ] || { echo "GENIE variable not set"; return 1; }
+    [ -x "$GENIE/bin/gevgen" ] || { echo "gevgen not found"; return 1; }
+    local missing
+    missing="$(ldd "$GENIE/bin/gevgen" | grep 'not found')"
+    [ -z "$missing" ] || { echo "missing libraries: $missing"; return 1; }
+    echo "$GENIE"
+}
+
+echo "Checking HEP environment (${CONDA_DEFAULT_ENV:-none active})"
+check "ROOT"      root-config --version
+check "PyROOT"    python -c "import ROOT; print(ROOT.gROOT.GetVersion())"
+check "Geant4"    geant4-config --version
+check "G4 data"   geant4-config --check-datasets
+check "Pythia 8"  test -f "$CONDA_PREFIX/include/Pythia8/Pythia.h"
+check "LHAPDF"    lhapdf-config --version
+check "GENIE"     genie_ok
+check "Python"    python -c "import numpy, scipy, pandas, matplotlib, uproot, awkward, hist, mplhep, iminuit; print('scientific stack ok')"
+
+echo ""
+echo "$PASS passed, $FAIL failed"
+[ "$FAIL" -eq 0 ]
