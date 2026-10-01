@@ -3,7 +3,8 @@
 [![install-test](https://github.com/muonldh/hep-stack/actions/workflows/install-test.yml/badge.svg)](https://github.com/muonldh/hep-stack/actions/workflows/install-test.yml)
 
 One command to install a complete high energy physics software environment on Linux or Windows (WSL):
-ROOT, Geant4, Pythia 8, LHAPDF, the GENIE neutrino event generator, and the Scikit-HEP Python analysis tools.
+ROOT, Geant4, Pythia 8, LHAPDF, the GENIE neutrino event generator, the OscProb, Prob3++ and NuCraft
+oscillation codes, and the Scikit-HEP Python analysis tools.
 
 No compiling ROOT for an hour, no sudo, no editing paths by hand.
 
@@ -16,6 +17,8 @@ No compiling ROOT for an hour, no sudo, no editing paths by hand.
 | [Pythia 8](https://pythia.org) | Event generation, hadronization | conda-forge package |
 | [LHAPDF 6](https://lhapdf.hepforge.org) | Parton distribution functions | conda-forge package |
 | [GENIE](https://github.com/GENIE-MC/Generator) (R-3_06_02) | Neutrino event generator | compiled by `scripts/build_genie.sh` |
+| [OscProb](https://github.com/joaoabcoelho/OscProb) (v2.4.0) | Oscillation probabilities with PREM, NSI, sterile, decoherence | compiled by `scripts/build_oscprob.sh` |
+| [Prob3++](https://github.com/rogerwendell/Prob3plusplus) (v3r20) | Super-Kamiokande's oscillation probability code | compiled by `scripts/build_prob3pp.sh` |
 | [NuCraft](https://arxiv.org/abs/1409.1387) | Atmospheric neutrino oscillation probabilities | bundled in `extern/nucraft`, installed by `scripts/install_nucraft.sh` |
 | numpy, scipy, pandas, matplotlib, JupyterLab | General scientific Python | conda-forge packages |
 | uproot, awkward, hist, mplhep, iminuit, vector, particle | [Scikit-HEP](https://scikit-hep.org) analysis tools | conda-forge packages |
@@ -77,7 +80,13 @@ Expected output:
   [ok]   PyROOT         6.xx/xx
   [ok]   Geant4         11.x.x
   ...
-8 passed, 0 failed
+11 passed, 0 failed
+```
+
+To confirm you can compile your own Geant4 programs, build and run Geant4's example B1:
+
+```bash
+bash scripts/test_geant4_example.sh
 ```
 
 ## Using GENIE
@@ -92,6 +101,47 @@ To build a different GENIE release or enable extra features:
 conda activate hep
 GENIE_VERSION=R-3_06_02 GENIE_EXTRA_FLAGS="--enable-t2k" bash scripts/build_genie.sh --rebuild
 ```
+
+## Using OscProb and Prob3++
+
+Both are available from Python (and C++) after `conda activate hep`.
+
+OscProb, through PyROOT:
+
+```python
+import ROOT
+ROOT.gSystem.Load("libOscProb")
+
+p = ROOT.OscProb.PMNS_Fast()          # standard 3-flavour; also PMNS_NSI, PMNS_Sterile, ...
+prem = ROOT.OscProb.PremModel()       # PREM Earth model
+prem.FillPath(-1.0)                   # cos(zenith) = -1: straight up through the core
+p.SetPath(prem.GetNuPath())
+print(p.Prob(1, 1, 5.0))              # P(numu -> numu) at 5 GeV
+```
+
+Prob3++, through its Python wrapper:
+
+```python
+from BargerPropagator import BargerPropagator
+
+b = BargerPropagator()
+# sin^2(th12), sin^2(th13), sin^2(th23), dm21, dm_atm [eV^2], delta_cp [rad], E [GeV], sin^2 inputs, nu/anti-nu
+b.SetMNS(0.307, 0.0222, 0.561, 7.49e-5, 2.534e-3, 3.8, 5.0, True, 1)
+b.DefinePath(-1.0, 15.0, True)        # cos(zenith), production height [km], use PREM
+b.propagate(1)
+print(b.GetProb(2, 2))                # P(numu -> numu)
+```
+
+The codes use different conventions. Check these before comparing results:
+
+| | OscProb | Prob3++ |
+|---|---|---|
+| Flavour index | 0 = e, 1 = mu, 2 = tau | 1 = e, 2 = mu, 3 = tau |
+| Antineutrinos | `p.SetIsNuBar(True)` | negative type, e.g. `-1`, in `SetMNS` and `propagate` |
+| Inverted ordering | negative `SetDm(3, ...)` | negative atmospheric splitting (see the Prob3++ README) |
+
+To rebuild a different release: `OSCPROB_VERSION=v2.3.0 bash scripts/build_oscprob.sh --rebuild`
+(the same works with `PROB3PP_VERSION` and `scripts/build_prob3pp.sh`).
 
 ## Using NuCraft
 
@@ -133,7 +183,7 @@ Miniforge itself lives in `~/miniforge3`. To remove it as well, delete that fold
 
 1. **Conda.** `install.sh` finds an existing conda installation or installs Miniforge.
 2. **Environment.** It creates the `hep` environment from `environment.yml`, using only the community-maintained [conda-forge](https://conda-forge.org) channel.
-3. **GENIE and NuCraft.** GENIE is not available as a conda package, so `scripts/build_genie.sh` compiles it inside the environment with the environment's own compilers and libraries. It then registers conda activation hooks, so `conda activate hep` sets `GENIE`, `PATH` and `LD_LIBRARY_PATH` for you. `scripts/install_nucraft.sh` copies the bundled NuCraft into the environment and applies its NumPy 2 fix.
+3. **GENIE, OscProb, Prob3++ and NuCraft.** These are not available as conda packages. `scripts/build_genie.sh`, `scripts/build_oscprob.sh` and `scripts/build_prob3pp.sh` compile them inside the environment with the environment's own compilers and libraries, then register conda activation hooks, so `conda activate hep` sets `GENIE`, `OSCPROB_DIR`, `PROB3PP`, `PATH`, `LD_LIBRARY_PATH` and `ROOT_INCLUDE_PATH` for you. `scripts/install_nucraft.sh` copies the bundled NuCraft into the environment and applies its NumPy 2 fix.
 4. **Test.** `scripts/check_install.sh` verifies each component.
 
 The full installation is tested automatically on a clean Ubuntu 24.04 machine by
@@ -155,20 +205,8 @@ The full installation is tested automatically on a clean Ubuntu 24.04 machine by
 | `xdg-open: not found` when opening a TBrowser | Run `echo "Browser.Name: TRootBrowser" >> ~/.rootrc` (the installer does this automatically on WSL). |
 | Geant4 or ROOT windows do not open on WSL | Graphics need Windows 11 (WSLg). Batch jobs work without it. |
 
-## Reporting problems
-
-If the installer fails or something does not work:
-
-1. Go to the [Issues page](https://github.com/muonldh/hep-stack/issues) and click **New issue**. You need a free GitHub account.
-2. Give it a short title, for example "GENIE build fails on Ubuntu 22.04".
-3. In the description, include:
-   - your system (run `lsb_release -a` and paste the output)
-   - whether you use WSL or native Ubuntu
-   - the command you ran
-   - the last 30 or so lines of the error output
-
 ## License
 
 The scripts in this repository are released under the [MIT License](LICENSE).
-ROOT, Geant4, Pythia, LHAPDF, GENIE and NuCraft are separate projects under their own licenses.
+ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++ and NuCraft are separate projects under their own licenses.
 If you use them in published work, cite them as their authors request.

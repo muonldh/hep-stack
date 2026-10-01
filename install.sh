@@ -3,7 +3,7 @@
 #
 #   bash install.sh                  install everything
 #   bash install.sh --auto-activate  also activate the environment in every new terminal
-#   bash install.sh --rebuild-genie  force a fresh GENIE build
+#   bash install.sh --rebuild        force fresh builds of GENIE, OscProb and Prob3++
 #   bash install.sh --yes            never ask questions (for automated runs)
 
 set -eo pipefail
@@ -13,12 +13,12 @@ ENV_NAME="${ENV_NAME:-hep}"
 MINIFORGE_DIR="${MINIFORGE_DIR:-$HOME/miniforge3}"
 AUTO_ACTIVATE=0
 ASSUME_YES=0
-GENIE_ARGS=()
+REBUILD_ARGS=()
 
 for arg in "$@"; do
     case "$arg" in
         --auto-activate) AUTO_ACTIVATE=1 ;;
-        --rebuild-genie) GENIE_ARGS+=(--rebuild) ;;
+        --rebuild|--rebuild-genie) REBUILD_ARGS+=(--rebuild) ;;
         --yes|-y)        ASSUME_YES=1 ;;
         -h|--help)       sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $arg (see: bash install.sh --help)"; exit 1 ;;
@@ -85,17 +85,23 @@ conda activate "$ENV_NAME"
 
 # --- 3. GENIE ----------------------------------------------------------------
 say "Building GENIE inside the environment"
-bash "$REPO_DIR/scripts/build_genie.sh" "${GENIE_ARGS[@]}"
+bash "$REPO_DIR/scripts/build_genie.sh" "${REBUILD_ARGS[@]}"
 
-# Re-activate so the GENIE activation hook written by build_genie.sh takes effect.
+# --- 4. Oscillation probability codes ----------------------------------------
+say "Building OscProb"
+bash "$REPO_DIR/scripts/build_oscprob.sh" "${REBUILD_ARGS[@]}"
+say "Building Prob3++"
+bash "$REPO_DIR/scripts/build_prob3pp.sh" "${REBUILD_ARGS[@]}"
+
+# Re-activate so the activation hooks written by the build scripts take effect.
 conda deactivate
 conda activate "$ENV_NAME"
 
-# --- 4. NuCraft (only if bundled in extern/nucraft) ---------------------------
+# --- 5. NuCraft (only if bundled in extern/nucraft) ---------------------------
 say "Installing NuCraft"
 bash "$REPO_DIR/scripts/install_nucraft.sh"
 
-# --- 5. WSL: use ROOT's classic browser --------------------------------------
+# --- 6. WSL: use ROOT's classic browser --------------------------------------
 # ROOT's web-based TBrowser needs a Linux web browser, which WSL does not have.
 if grep -qi microsoft /proc/version 2>/dev/null; then
     touch "$HOME/.rootrc"
@@ -105,7 +111,7 @@ if grep -qi microsoft /proc/version 2>/dev/null; then
     fi
 fi
 
-# --- 6. Optional auto-activation ----------------------------------------------
+# --- 7. Optional auto-activation ----------------------------------------------
 BEGIN="# >>> hep-stack auto-activate >>>"
 END="# <<< hep-stack auto-activate <<<"
 sed -i "/$BEGIN/,/$END/d" "$HOME/.bashrc"
@@ -113,7 +119,7 @@ if [ "$AUTO_ACTIVATE" = 1 ]; then
     printf '%s\nconda activate %s\n%s\n' "$BEGIN" "$ENV_NAME" "$END" >> "$HOME/.bashrc"
 fi
 
-# --- 7. Check ----------------------------------------------------------------
+# --- 8. Check ----------------------------------------------------------------
 say "Checking the installation"
 bash "$REPO_DIR/scripts/check_install.sh"
 

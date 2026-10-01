@@ -34,6 +34,8 @@ check "G4 data"   geant4-config --check-datasets
 check "Pythia 8"  test -f "$CONDA_PREFIX/include/Pythia8/Pythia.h"
 check "LHAPDF"    lhapdf-config --version
 check "GENIE"     genie_ok
+check "OscProb"   python -c "import ROOT; assert ROOT.gSystem.Load('libOscProb') >= 0; p = ROOT.OscProb.PMNS_Fast(); print('P(numu->numu, 1000 km, 5 GeV) = %.4f' % p.Prob(1, 1, 5.0))"
+check "Prob3++"   python -c "from BargerPropagator import BargerPropagator; b = BargerPropagator(); print('loaded from', __import__('BargerPropagator').__file__)"
 check "Python"    python -c "import numpy, scipy, pandas, matplotlib, uproot, awkward, hist, mplhep, iminuit; print('scientific stack ok')"
 if [ -d "$CONDA_PREFIX/opt/nucraft" ]; then
     check "NuCraft"   python -c "import NuCraft; print(NuCraft.__file__)"

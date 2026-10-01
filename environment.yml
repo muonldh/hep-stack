@@ -1,6 +1,7 @@
 # Conda environment for high energy physics work.
 # Everything here is a prebuilt package from conda-forge.
-# GENIE is not on conda-forge; scripts/build_genie.sh compiles it inside this environment.
+# GENIE, OscProb and Prob3++ are not on conda-forge; the scripts in scripts/
+# compile them inside this environment.
 
 name: hep
 channels:
@@ -33,6 +34,9 @@ dependencies:
   - qt6-main
   - xorg-libx11
   - xorg-libxmu
+
+  # Needed to build OscProb (tested upstream with Eigen 3.4)
+  - eigen=3.4
 
   # Python analysis stack (Scikit-HEP and friends)
   - numpy
