@@ -41,7 +41,13 @@ mkdir -p "$P/opt"
 git -c advice.detachedHead=false clone --depth 1 --branch "$OSCPROB_VERSION" \
     https://github.com/joaoabcoelho/OscProb.git "$SRC"
 
+# ROOT >= 6.40 rejects the empty MatrixDecomp dictionary in OscProb v2.4.0.
+# Apply upstream's fix (OscProb commit f0830e9, "Remove unnecessary LinkDef which
+# breaks in ROOT 6.40.02"); it does nothing for later releases that already include it.
+sed -i '/add_root_dictionary(MatrixDecomp/d' "$SRC/MatrixDecomp/CMakeLists.txt"
+
 # Eigen comes from the conda environment, so the eigen git submodule is not needed.
+   
 cmake -S "$SRC" -B "$SRC/build" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$DIR" \
