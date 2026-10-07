@@ -1,0 +1,35 @@
+# Tests the optional extras (bash install.sh --with ...) on a clean Ubuntu machine.
+# Kept separate from install-test so a problem in an extra never turns the main badge red.
+name: extras-test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "install.sh"
+      - "environment.yml"
+      - "scripts/**"
+      - ".github/workflows/extras-test.yml"
+  schedule:
+    - cron: "0 4 1 * *"   # monthly
+  workflow_dispatch:       # adds a "Run workflow" button in the Actions tab
+
+jobs:
+  extra:
+    strategy:
+      fail-fast: false
+      matrix:
+        extra: [gseagen, corsika8]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    name: install --with ${{ matrix.extra }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h "$HOME"
+
+      - name: Run installer with ${{ matrix.extra }}
+        run: bash install.sh --yes --with ${{ matrix.extra }}
