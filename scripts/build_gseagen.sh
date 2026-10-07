@@ -13,12 +13,10 @@
 # Environment variables:
 #   GSEAGEN_VERSION          git tag or branch (default: the repository's default branch)
 #   GSEAGEN_CONFIGURE_FLAGS  extra ./configure options
-#   JOBS                     parallel compile jobs (default: number of cores)
 
 set -eo pipefail
 
 GSEAGEN_VERSION="${GSEAGEN_VERSION:-}"
-JOBS="${JOBS:-$(nproc)}"
 REBUILD=0
 [ "${1:-}" = "--rebuild" ] && REBUILD=1
 
@@ -87,8 +85,19 @@ MAKE_VARS=(
     SOFLAGS="-shared $RPATH"
 )
 
-step "compiling with $JOBS jobs"
-make "${MAKE_VARS[@]}" -j"$JOBS" || make "${MAKE_VARS[@]}" -j1
+# Some gSeaGen makefiles (e.g. src/PropaMuon) hard-code -std=c++11, but current ROOT
+# headers need at least C++17. Use the same standard ROOT was built with.
+ROOT_STD="$(root-config --cflags | grep -o -- '-std=[^ ]*' | head -n 1)"
+ROOT_STD="${ROOT_STD:--std=c++17}"
+find "$DIR/src" -name 'Makefile*' -print0 | xargs -0 \
+    sed -i -E "s/-std=(c|gnu)\+\+(0x|11|14)\b/$ROOT_STD/g"
+echo "Using $ROOT_STD for all gSeaGen packages"
+
+# gSeaGen's makefiles create shared folders without 'mkdir -p', which collides when
+# packages are built in parallel ("cannot create directory 'lib': File exists").
+# The code base is small, so build it serially.
+step "compiling"
+make "${MAKE_VARS[@]}" -j1
 
 EXE="$(find "$DIR" -type f -name gSeaNuEvGen -perm -u+x | head -n 1)"
 if [ -z "$EXE" ]; then
