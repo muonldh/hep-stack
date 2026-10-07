@@ -71,6 +71,14 @@ git ls-remote --tags --refs https://gitlab.iap.kit.edu/AirShowerPhysics/corsika.
 step "Conan profile (compiler: $("$CXX" -dumpfullversion))"
 conan profile detect --exist-ok
 
+# GCC 15 compiles C as C23 by default, where an old-style declaration 'f()' means
+# "no arguments". Some dependencies Conan builds from source (e.g. termcap 1.3.1)
+# rely on the older meaning, so build their C code as C17. This setting lives in
+# Conan's global.conf, so it applies to every profile, including CORSIKA's own.
+if ! grep -qs 'tools.build:cflags' "$CONAN_HOME/global.conf"; then
+    echo 'tools.build:cflags=["-std=gnu17"]' >> "$CONAN_HOME/global.conf"
+fi
+
 mkdir -p "$BUILD"
 cd "$BUILD"
 

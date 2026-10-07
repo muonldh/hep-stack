@@ -40,9 +40,10 @@ dependencies:
   # Needed to build OscProb (tested upstream with Eigen 3.4)
   - eigen=3.4
 
-  # Needed only for the optional CORSIKA 8 build (bash install.sh --with corsika8)
-  - conan
-  - git-lfs
+  # Needed only for the optional extras (bash install.sh --with ...)
+  - conan                # CORSIKA 8
+  - git-lfs              # CORSIKA 8
+  - libboost-devel       # gSeaGen
 
   # Python analysis stack (Scikit-HEP and friends)
   - numpy

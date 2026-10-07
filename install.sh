@@ -120,6 +120,8 @@ bash "$REPO_DIR/scripts/build_prob3pp.sh" "${REBUILD_ARGS[@]}"
 
 # --- Optional extras ---------------------------------------------------------
 if [ "$WITH_GSEAGEN" = 1 ]; then
+    say "Building GENIE ReWeight (needed by gSeaGen)"
+    bash "$REPO_DIR/scripts/build_genie_reweight.sh" "${REBUILD_ARGS[@]}"
     say "Building gSeaGen"
     bash "$REPO_DIR/scripts/build_gseagen.sh" "${REBUILD_ARGS[@]}"
 fi

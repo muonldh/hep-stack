@@ -271,7 +271,8 @@ bash install.sh --with gseagen
 ```
 
 It builds APFEL, rebuilds GENIE once with APFEL enabled (same version and tunes as before,
-so existing GENIE results are unaffected), downloads `HERAPDF15NLO_EIG`, and builds gSeaGen.
+so existing GENIE results are unaffected), downloads `HERAPDF15NLO_EIG`, builds GENIE
+ReWeight (R-1_04_02, which gSeaGen requires), and then builds gSeaGen.
 After `conda activate hep`, `gSeaNuEvGen -h` lists all options.
 
 Like any GENIE application, gSeaGen needs cross-section splines for the tune you use.

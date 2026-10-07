@@ -31,6 +31,7 @@ P="$CONDA_PREFIX"
 DIR="$P/opt/gseagen"
 STAMP="$DIR/.built"
 export GENIE="$P/opt/genie"
+export GENIE_REWEIGHT="$P/opt/genie-reweight"
 export GSEAGEN="$DIR"
 
 if [ -f "$STAMP" ] && [ "$REBUILD" = 0 ]; then
@@ -39,7 +40,9 @@ if [ -f "$STAMP" ] && [ "$REBUILD" = 0 ]; then
 fi
 
 [ -x "$GENIE/bin/gevgen" ] || { echo "GENIE is not built. Run: bash scripts/build_genie.sh"; exit 1; }
-if ! ldd "$GENIE"/lib/*.so 2>/dev/null | grep -q libAPFEL; then
+compgen -G "$GENIE_REWEIGHT/lib/libGRwFwk*" >/dev/null \
+    || { echo "GENIE ReWeight is not built. Run: bash scripts/build_genie_reweight.sh"; exit 1; }
+if ! ldd "$GENIE/bin/gevgen" 2>/dev/null | grep -q libAPFEL; then
     echo "Note: GENIE is built without APFEL, so the ultra-high-energy tune GHE19_00b"
     echo "      will not work. Use 'bash install.sh --with gseagen' to set this up."
 fi
@@ -69,11 +72,12 @@ step "configure options"
 ./configure --help 2>&1 | head -n 60 || true
 
 step "configuring"
+# Boost (always required) comes from the conda environment.
 # shellcheck disable=SC2086
-./configure ${GSEAGEN_CONFIGURE_FLAGS:-}
+./configure --with-boost-inc="$P/include" --with-boost-lib="$P/lib" ${GSEAGEN_CONFIGURE_FLAGS:-}
 
 # Same compiler and RPATH overrides as for GENIE, whose make system gSeaGen shares.
-RPATH="-Wl,--disable-new-dtags -Wl,-rpath,$P/lib -Wl,-rpath,$GENIE/lib -Wl,-rpath,$DIR/lib -L$P/lib"
+RPATH="-Wl,--disable-new-dtags -Wl,-rpath,$P/lib -Wl,-rpath,$GENIE/lib -Wl,-rpath,$GENIE_REWEIGHT/lib -Wl,-rpath,$DIR/lib -L$P/lib"
 [ -d "$P/opt/apfel/lib" ] && RPATH="$RPATH -Wl,-rpath,$P/opt/apfel/lib"
 MAKE_VARS=(
     CXX="$CXX"

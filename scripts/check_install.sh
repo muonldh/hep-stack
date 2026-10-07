@@ -47,8 +47,12 @@ if [ -d "$CONDA_PREFIX/opt/corsika8" ]; then
 fi
 if [ -d "$CONDA_PREFIX/opt/apfel" ]; then
     # shellcheck disable=SC2016
-    check "GENIE+APFEL" bash -c 'ldd "$GENIE"/lib/*.so | grep -q libAPFEL && echo "HEDIS can use NLO structure functions"'
+    check "GENIE+APFEL" bash -c 'ldd "$GENIE/bin/gevgen" | grep -q libAPFEL && echo "HEDIS can use NLO structure functions"'
     check "HERAPDF15"  test -d "$(lhapdf-config --datadir)/HERAPDF15NLO_EIG"
+fi
+if [ -d "$CONDA_PREFIX/opt/genie-reweight" ]; then
+    # shellcheck disable=SC2016
+    check "GENIE ReWeight" bash -c 'ls "$GENIE_REWEIGHT"/lib/libGRwFwk*.so | head -n1 | xargs basename'
 fi
 if [ -d "$CONDA_PREFIX/opt/gseagen" ]; then
     check "gSeaGen"   command -v gSeaNuEvGen
