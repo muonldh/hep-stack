@@ -119,7 +119,10 @@ done
 step "compiling"
 make "${MAKE_VARS[@]}" -j1
 
-EXE="$(find "$DIR" -type f -name gSeaNuEvGen -perm -u+x | head -n 1)"
+# gSeaGen builds e.g. bin/gSeaNuEvGenv7.6.1-D and links bin/gSeaNuEvGen to it,
+# so accept a symbolic link as long as it points to a working program.
+EXE="$(find "$DIR" \( -type f -o -type l \) -name gSeaNuEvGen | head -n 1)"
+[ -n "$EXE" ] && [ ! -x "$EXE" ] && EXE=""
 if [ -z "$EXE" ]; then
     echo "ERROR: gSeaNuEvGen was not built. Check the output above."
     exit 1
