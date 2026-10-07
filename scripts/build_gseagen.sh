@@ -93,6 +93,18 @@ find "$DIR/src" -name 'Makefile*' -print0 | xargs -0 \
     sed -i -E "s/-std=(c|gnu)\+\+(0x|11|14)\b/$ROOT_STD/g"
 echo "Using $ROOT_STD for all gSeaGen packages"
 
+# Some headers (e.g. src/PropaMuon/PropaTracks.h) call fabs/sqrt without including
+# <cmath>. The C++ compiler gets away with it through other headers, but ROOT's
+# dictionary generator reads each header on its own and stops. Add the include to
+# any such header; it changes nothing for code that already had it indirectly.
+MATHFN='\b(fabs|sqrt|pow|exp|log|log10|sin|cos|tan|asin|acos|atan|atan2|floor|ceil)[[:space:]]*\('
+find "$DIR/src" -name '*.h' -print0 | while IFS= read -r -d '' h; do
+    if grep -qE "$MATHFN" "$h" && ! grep -qE '#include[[:space:]]*[<"](cmath|math\.h|TMath\.h)[>"]' "$h"; then
+        sed -i '1i #include <cmath>' "$h"
+        echo "Added #include <cmath> to ${h#"$DIR"/}"
+    fi
+done
+
 # gSeaGen's makefiles create shared folders without 'mkdir -p', which collides when
 # packages are built in parallel ("cannot create directory 'lib': File exists").
 # The code base is small, so build it serially.
