@@ -51,7 +51,24 @@ mkdir -p "$P/opt"
 git -c advice.detachedHead=false clone --depth 1 --branch "$APFEL_VERSION" \
     https://github.com/scarrazza/apfel.git "$SRC"
 
+# APFEL's CMake file asks 'lhapdf-config --incdir', an option current LHAPDF 6
+# releases do not have (it then uses the error text as an include path). Give it a
+# small wrapper that answers --incdir and passes everything else to the real tool.
+REAL_LHAPDF_CONFIG="$(command -v lhapdf-config)"
+mkdir -p "$SRC/wrapper"
+cat > "$SRC/wrapper/lhapdf-config" <<EOF
+#!/bin/sh
+if [ "\$1" = "--incdir" ]; then
+    echo "\$("$REAL_LHAPDF_CONFIG" --prefix)/include"
+else
+    exec "$REAL_LHAPDF_CONFIG" "\$@"
+fi
+EOF
+chmod +x "$SRC/wrapper/lhapdf-config"
+echo "LHAPDF headers for APFEL: $("$SRC/wrapper/lhapdf-config" --incdir)"
+
 cmake -S "$SRC" -B "$SRC/build" \
+    -DLHAPDF_CONFIG="$SRC/wrapper/lhapdf-config" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$DIR" \
     -DCMAKE_INSTALL_LIBDIR=lib \
