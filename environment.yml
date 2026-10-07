@@ -44,6 +44,7 @@ dependencies:
   - conan                # CORSIKA 8
   - git-lfs              # CORSIKA 8
   - libboost-devel       # gSeaGen
+  - tbb-devel            # gSeaGen (ROOT's link flags include -ltbb)
 
   # Python analysis stack (Scikit-HEP and friends)
   - numpy
