@@ -83,6 +83,28 @@ cmake --build "$SRC/build" --target install -j "$JOBS"
 [ -f "$DIR/lib/libAPFEL.so" ] || { echo "ERROR: libAPFEL.so was not installed."; exit 1; }
 [ -f "$DIR/include/APFEL/APFEL.h" ] || { echo "ERROR: APFEL headers were not installed."; exit 1; }
 
+# GENIE's configure only accepts APFEL if it finds libAPFEL.la, the libtool file that
+# APFEL's old autotools build produced. The CMake build does not make one, so write
+# a standard libtool description of the shared library. (GENIE itself links with
+# -L<dir> -lAPFEL; the .la file is only checked for existence.)
+cat > "$DIR/lib/libAPFEL.la" <<EOF
+# libAPFEL.la - a libtool library file (written by hep-stack for GENIE's configure)
+dlname='libAPFEL.so'
+library_names='libAPFEL.so'
+old_library='libAPFEL.a'
+inherited_linker_flags=''
+dependency_libs=''
+weak_library_names=''
+current=0
+age=0
+revision=0
+installed=yes
+shouldnotlink=no
+dlopen=''
+dlpreopen=''
+libdir='$DIR/lib'
+EOF
+
 write_env_hooks apfel APFEL_DIR lib
 
 rm -rf "$SRC"
