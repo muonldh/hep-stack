@@ -93,15 +93,23 @@ find "$DIR/src" -name 'Makefile*' -print0 | xargs -0 \
     sed -i -E "s/-std=(c|gnu)\+\+(0x|11|14)\b/$ROOT_STD/g"
 echo "Using $ROOT_STD for all gSeaGen packages"
 
-# Some headers (e.g. src/PropaMuon/PropaTracks.h) call fabs/sqrt without including
-# <cmath>. The C++ compiler gets away with it through other headers, but ROOT's
-# dictionary generator reads each header on its own and stops. Add the include to
-# any such header; it changes nothing for code that already had it indirectly.
-MATHFN='\b(fabs|sqrt|pow|exp|log|log10|sin|cos|tan|asin|acos|atan|atan2|floor|ceil)[[:space:]]*\('
-find "$DIR/src" -name '*.h' -print0 | while IFS= read -r -d '' h; do
-    if grep -qE "$MATHFN" "$h" && ! grep -qE '#include[[:space:]]*[<"](cmath|math\.h|TMath\.h)[>"]' "$h"; then
-        sed -i '1i #include <cmath>' "$h"
-        echo "Added #include <cmath> to ${h#"$DIR"/}"
+# Some gSeaGen files use standard functions without including the header that
+# declares them: fabs/sqrt/sin/... need <cmath>, std::replace/std::sort/... need
+# <algorithm>. Older compilers pulled these in through other headers; GCC 15 and
+# ROOT's dictionary generator (which reads each header on its own) do not.
+# Add the missing include to each such header and source file. Files that
+# already include it are left unchanged, and no code is modified.
+MATHFN='\b(fabs|fmod|sqrt|pow|exp|log|log10|sin|cos|tan|asin|acos|atan|atan2|floor|ceil)[[:space:]]*\('
+ALGOFN='std::(replace|replace_if|sort|stable_sort|find|find_if|count|count_if|remove|remove_if|reverse|unique|min_element|max_element|transform|fill|copy_if|any_of|all_of|none_of)[[:space:]]*\('
+find "$DIR/src" \( -name '*.h' -o -name '*.hh' -o -name '*.cxx' -o -name '*.cc' -o -name '*.cpp' \) -print0 |
+while IFS= read -r -d '' f; do
+    if grep -qE "$MATHFN" "$f" && ! grep -qE '#include[[:space:]]*[<"](cmath|math\.h|TMath\.h)[>"]' "$f"; then
+        sed -i '1i #include <cmath>' "$f"
+        echo "Added #include <cmath> to ${f#"$DIR"/}"
+    fi
+    if grep -qE "$ALGOFN" "$f" && ! grep -qE '#include[[:space:]]*<algorithm>' "$f"; then
+        sed -i '1i #include <algorithm>' "$f"
+        echo "Added #include <algorithm> to ${f#"$DIR"/}"
     fi
 done
 
