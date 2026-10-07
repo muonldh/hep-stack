@@ -25,7 +25,19 @@ fi
 
 P="$CONDA_PREFIX"
 GENIE_DIR="$P/opt/genie"
-STAMP="$GENIE_DIR/.built-$GENIE_VERSION"
+
+# If APFEL is installed (scripts/build_apfel.sh, part of the gSeaGen extra), build
+# GENIE with it: the high-energy tune GHE19_00b needs APFEL for NLO structure
+# functions. The stamp name records this, so installing APFEL later triggers one
+# rebuild of GENIE; nothing else about the GENIE build changes.
+APFEL_P="$P/opt/apfel"
+APFEL_FLAGS=()
+APFEL_TAG=""
+if [ -f "$APFEL_P/lib/libAPFEL.so" ]; then
+    APFEL_FLAGS=(--enable-apfel --with-apfel-inc="$APFEL_P/include" --with-apfel-lib="$APFEL_P/lib")
+    APFEL_TAG="-apfel"
+fi
+STAMP="$GENIE_DIR/.built-$GENIE_VERSION$APFEL_TAG"
 
 if [ -f "$STAMP" ] && [ "$REBUILD" = 0 ]; then
     echo "GENIE $GENIE_VERSION already built in $GENIE_DIR (use --rebuild to redo it)."
@@ -71,6 +83,7 @@ export GENIE="$GENIE_DIR"
     --enable-boosted-dark-matter \
     --enable-heavy-neutral-lepton \
     --enable-dark-neutrino \
+    "${APFEL_FLAGS[@]}" \
     ${GENIE_EXTRA_FLAGS:-}
 
 # GENIE's makefiles hard-code g++ and their own link flags. Override them on the
@@ -78,6 +91,7 @@ export GENIE="$GENIE_DIR"
 # an RPATH to the environment. Without the RPATH, GENIE could pick up the system's
 # copies of libraries like libxml2 at run time instead of the environment's.
 RPATH="-Wl,--disable-new-dtags -Wl,-rpath,$P/lib -Wl,-rpath,$GENIE_DIR/lib -L$P/lib"
+[ -n "$APFEL_TAG" ] && RPATH="$RPATH -Wl,-rpath,$APFEL_P/lib"
 MAKE_VARS=(
     CXX="$CXX"
     CC="$CC"
@@ -129,5 +143,15 @@ fi
 unset GENIE _GENIE_OLD_LD_LIBRARY_PATH
 EOF
 
+# The high-energy tune GHE19_00b reads the HERAPDF15NLO_EIG PDF set through LHAPDF.
+if [ -n "$APFEL_TAG" ]; then
+    PDFDIR="$(lhapdf-config --datadir)"
+    if [ ! -d "$PDFDIR/HERAPDF15NLO_EIG" ]; then
+        echo "Downloading PDF set HERAPDF15NLO_EIG into $PDFDIR..."
+        curl -fsSL https://lhapdfsets.web.cern.ch/lhapdfsets/current/HERAPDF15NLO_EIG.tar.gz \
+            | tar -xz -C "$PDFDIR"
+    fi
+fi
+
 touch "$STAMP"
-echo "GENIE $GENIE_VERSION built in $GENIE_DIR"
+echo "GENIE $GENIE_VERSION built in $GENIE_DIR${APFEL_TAG:+ (with APFEL)}"

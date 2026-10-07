@@ -5,6 +5,11 @@
 #   bash install.sh --auto-activate  also activate the environment in every new terminal
 #   bash install.sh --rebuild        force fresh builds of GENIE, OscProb and Prob3++
 #   bash install.sh --yes            never ask questions (for automated runs)
+#
+# Optional extras (can be combined, e.g. --with corsika8 --with gseagen):
+#   bash install.sh --with corsika8  CORSIKA 8 air showers / atmospheric muons (1-2 hours)
+#   bash install.sh --with gseagen   gSeaGen with GENIE's ultra-high-energy model (adds APFEL,
+#                                    rebuilds GENIE once with it)
 
 set -eo pipefail
 
@@ -14,15 +19,29 @@ MINIFORGE_DIR="${MINIFORGE_DIR:-$HOME/miniforge3}"
 AUTO_ACTIVATE=0
 ASSUME_YES=0
 REBUILD_ARGS=()
+WITH_CORSIKA8=0
+WITH_GSEAGEN=0
 
-for arg in "$@"; do
-    case "$arg" in
+add_extra() {
+    case "$1" in
+        corsika8) WITH_CORSIKA8=1 ;;
+        gseagen)  WITH_GSEAGEN=1 ;;
+        *) echo "Unknown extra: $1 (choose corsika8 or gseagen)"; exit 1 ;;
+    esac
+}
+
+while [ $# -gt 0 ]; do
+    case "$1" in
         --auto-activate) AUTO_ACTIVATE=1 ;;
         --rebuild|--rebuild-genie) REBUILD_ARGS+=(--rebuild) ;;
         --yes|-y)        ASSUME_YES=1 ;;
-        -h|--help)       sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-        *) echo "Unknown option: $arg (see: bash install.sh --help)"; exit 1 ;;
+        --with)          [ -n "${2:-}" ] || { echo "--with needs a name: corsika8 or gseagen"; exit 1; }
+                         add_extra "$2"; shift ;;
+        --with=*)        add_extra "${1#--with=}" ;;
+        -h|--help)       sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        *) echo "Unknown option: $1 (see: bash install.sh --help)"; exit 1 ;;
     esac
+    shift
 done
 
 say()  { printf '\n\033[1;34m==> %s\033[0m\n' "$*"; }
@@ -84,6 +103,12 @@ fi
 conda activate "$ENV_NAME"
 
 # --- 3. GENIE ----------------------------------------------------------------
+# For gSeaGen's ultra-high-energy neutrinos GENIE needs APFEL: build it first, so
+# GENIE is compiled with it in one go.
+if [ "$WITH_GSEAGEN" = 1 ]; then
+    say "Building APFEL (needed by GENIE's high-energy model)"
+    bash "$REPO_DIR/scripts/build_apfel.sh" "${REBUILD_ARGS[@]}"
+fi
 say "Building GENIE inside the environment"
 bash "$REPO_DIR/scripts/build_genie.sh" "${REBUILD_ARGS[@]}"
 
@@ -92,6 +117,16 @@ say "Building OscProb"
 bash "$REPO_DIR/scripts/build_oscprob.sh" "${REBUILD_ARGS[@]}"
 say "Building Prob3++"
 bash "$REPO_DIR/scripts/build_prob3pp.sh" "${REBUILD_ARGS[@]}"
+
+# --- Optional extras ---------------------------------------------------------
+if [ "$WITH_GSEAGEN" = 1 ]; then
+    say "Building gSeaGen"
+    bash "$REPO_DIR/scripts/build_gseagen.sh" "${REBUILD_ARGS[@]}"
+fi
+if [ "$WITH_CORSIKA8" = 1 ]; then
+    say "Building CORSIKA 8 (the first build takes one to two hours)"
+    bash "$REPO_DIR/scripts/build_corsika8.sh" "${REBUILD_ARGS[@]}"
+fi
 
 # Re-activate so the activation hooks written by the build scripts take effect.
 conda deactivate

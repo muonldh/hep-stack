@@ -1,6 +1,7 @@
 # hep-stack
 
 [![install-test](https://github.com/muonldh/hep-stack/actions/workflows/install-test.yml/badge.svg)](https://github.com/muonldh/hep-stack/actions/workflows/install-test.yml)
+[![extras-test](https://github.com/muonldh/hep-stack/actions/workflows/extras-test.yml/badge.svg)](https://github.com/muonldh/hep-stack/actions/workflows/extras-test.yml)
 
 One command to install a complete high energy physics software environment on Linux or Windows (WSL):
 ROOT, Geant4, Pythia 8, LHAPDF, the GENIE neutrino event generator, the OscProb, Prob3++ and NuCraft
@@ -19,6 +20,9 @@ No compiling ROOT for an hour, no sudo, no editing paths by hand.
 | [GENIE](https://github.com/GENIE-MC/Generator) (R-3_06_02) | Neutrino event generator | compiled by `scripts/build_genie.sh` |
 | [OscProb](https://github.com/joaoabcoelho/OscProb) (v2.4.0) | Oscillation probabilities with PREM, NSI, sterile, decoherence | compiled by `scripts/build_oscprob.sh` |
 | [Prob3++](https://github.com/rogerwendell/Prob3plusplus) (v3r20) | Super-Kamiokande's oscillation probability code | compiled by `scripts/build_prob3pp.sh` |
+| [CORSIKA 7](https://www.iap.kit.edu/corsika/) (7.8050), optional | Air showers and atmospheric muons | needs your own KIT password; compiled by `scripts/build_corsika.sh` |
+| [CORSIKA 8](https://gitlab.iap.kit.edu/AirShowerPhysics/corsika), optional | Open-source air showers and atmospheric muons | `bash install.sh --with corsika8`; compiled by `scripts/build_corsika8.sh` |
+| [gSeaGen](https://git.km3net.de/opensource/gseagen), optional | GENIE-based generator for neutrino telescopes, up to ultra-high energies | `bash install.sh --with gseagen`; adds [APFEL](https://github.com/scarrazza/apfel) 3.1.1 and builds GENIE with it |
 | [NuCraft](https://arxiv.org/abs/1409.1387) | Atmospheric neutrino oscillation probabilities | bundled in `extern/nucraft`, installed by `scripts/install_nucraft.sh` |
 | numpy, scipy, pandas, matplotlib, JupyterLab | General scientific Python | conda-forge packages |
 | uproot, awkward, hist, mplhep, iminuit, vector, particle | [Scikit-HEP](https://scikit-hep.org) analysis tools | conda-forge packages |
@@ -157,6 +161,136 @@ built-in `bool` directly after that import in the installed copy. Before NumPy 1
 was the built-in `bool` itself, so this reproduces the behaviour NuCraft was written for.
 No physics code is changed and no checks are removed.
 
+## CORSIKA 7 (optional)
+
+CORSIKA simulates cosmic-ray air showers and gives the muons (and other particles)
+arriving at the surface. It is not open source, so `install.sh` does not install it
+and this repository does not contain it. Each user needs their own download password:
+
+1. Register as described on the [CORSIKA download page](https://www.iap.kit.edu/corsika/79.php).
+   KIT sends you the password by e-mail. Do not share the password or the code;
+   KIT asks new users to register themselves.
+2. Build it inside the environment (about 10 minutes):
+
+   ```bash
+   conda activate hep
+   cd ~/hep-stack
+   bash scripts/build_corsika.sh
+   ```
+
+   It asks for the password, downloads CORSIKA 7.8050, and starts CORSIKA's own
+   configuration tool, `coconut`. The script prints suggested answers; for muon
+   production SIBYLL 2.3e (high energy) with UrQMD (low energy) is a good default.
+   If the download fails, fetch `corsika-78050.tar.gz` in a browser and run
+   `bash scripts/build_corsika.sh ~/Downloads/corsika-78050.tar.gz`.
+
+3. Test run: 100 proton showers from 100 GeV to 10 TeV, muons only (no EM cascade):
+
+   ```bash
+   conda activate hep
+   mkdir -p ~/corsika_test && cd ~/corsika_test
+   cat > muons.inp <<EOF
+   RUNNR   1
+   EVTNR   1
+   NSHOW   100
+   PRMPAR  14
+   ESLOPE  -2.7
+   ERANGE  1.E2  1.E4
+   THETAP  0.  70.
+   PHIP    -180.  180.
+   SEED    1  0  0
+   SEED    2  0  0
+   SEED    3  0  0
+   OBSLEV  0.
+   ECUTS   0.3  0.3  0.003  0.003
+   ELMFLG  F  F
+   MUMULT  T
+   MAXPRT  0
+   DATDIR  $CORSIKA_RUN/
+   DIRECT  ./
+   EXIT
+   EOF
+   $CORSIKA_RUN/corsika78050Linux_SIBYLL_urqmd < muons.inp > muons.lst
+   tail -n 20 muons.lst
+   ```
+
+   The particles at ground level are in the binary file `DAT000001`; `muons.lst` is the run log.
+   In Python you can read `DAT000001` with [corsikaio](https://github.com/cta-observatory/pycorsikaio)
+   (`pip install corsikaio`). For a real study, set `OBSLEV` (cm) and `MAGNET` (µT) for your
+   site and `NSHOW`, `ERANGE` and the primaries for your flux model; all keywords are
+   described in Section 4 of `$CORSIKA_DIR/doc/CORSIKA_GUIDE7.8050.pdf`.
+
+CORSIKA gives muons at the surface. Underground detectors such as JUNO still need the muons
+transported through the rock overburden with a separate code.
+
+## CORSIKA 8 (optional)
+
+CORSIKA 8 is the open-source successor of CORSIKA 7 (GPLv3, no registration needed).
+Install it with:
+
+```bash
+cd ~/hep-stack
+bash install.sh --with corsika8
+```
+
+The first build downloads several GB (source plus interaction-model tables) and compiles
+CORSIKA 8's own dependencies with Conan, so it takes one to two hours. Later runs of
+`install.sh` skip it. After `conda activate hep`:
+
+| Variable | Meaning |
+|---|---|
+| `CORSIKA8_DIR` | installed framework |
+| `corsika_DIR` | lets your own CMake projects find CORSIKA 8 |
+| `CORSIKA_DATA` | interaction-model tables read at run time |
+
+CORSIKA 8 is a C++ framework: you write a small program that sets up the atmosphere,
+primary, interaction models and observation level. The examples in
+`$CONDA_PREFIX/opt/corsika8-src/examples` are the starting point:
+
+```bash
+conda activate hep
+cmake -S $CONDA_PREFIX/opt/corsika8-src/examples -B ~/c8-examples
+cmake --build ~/c8-examples -j4
+ls ~/c8-examples/bin
+```
+
+To build a specific release instead of the latest development version:
+`CORSIKA8_VERSION=<tag> bash scripts/build_corsika8.sh --rebuild` (the build log lists recent tags).
+
+## gSeaGen (optional)
+
+gSeaGen is KM3NeT's event generator for neutrino telescopes. It is a GENIE application:
+it links the GENIE built here and uses GENIE for every interaction. For astrophysical
+neutrinos above about 100 TeV it uses GENIE's high-energy model (HEDIS, tune
+`GHE19_00b_00_000`), which needs NLO structure functions from APFEL and the
+`HERAPDF15NLO_EIG` PDF set. `--with gseagen` sets all of this up:
+
+```bash
+cd ~/hep-stack
+bash install.sh --with gseagen
+```
+
+It builds APFEL, rebuilds GENIE once with APFEL enabled (same version and tunes as before,
+so existing GENIE results are unaffected), downloads `HERAPDF15NLO_EIG`, and builds gSeaGen.
+After `conda activate hep`, `gSeaNuEvGen -h` lists all options.
+
+Like any GENIE application, gSeaGen needs cross-section splines for the tune you use.
+For ultra-high energies that is `GHE19_00b_00_000`; the first run with it also computes
+the structure-function tables with APFEL, which takes a while once.
+
+## How the generators fit together
+
+| Step | Tool | Connection |
+|---|---|---|
+| Cosmic-ray air showers, atmospheric muons | CORSIKA 7 or 8 | particles at an observation level, written to file |
+| Muons reaching the detector | Geant4 | read the CORSIKA muons as primary particles in your Geant4 application |
+| Neutrino interactions, GeV scale | GENIE (`gevgen`, `gevgen_atmo`) | atmospheric fluxes as input tables |
+| Neutrino interactions in a telescope, up to EeV | gSeaGen | built on the same GENIE |
+| Oscillation weights | OscProb, Prob3++, NuCraft | applied to GENIE or gSeaGen events afterwards |
+
+The codes are joined through their output files rather than linked into one program,
+which is how large experiments run them too.
+
 ## Adding more software
 
 Add the package name to `environment.yml`, then rerun `bash install.sh`. It updates the existing environment instead of starting over.
@@ -188,6 +322,7 @@ Miniforge itself lives in `~/miniforge3`. To remove it as well, delete that fold
 
 The full installation is tested automatically on a clean Ubuntu 24.04 machine by
 [GitHub Actions](.github/workflows/install-test.yml) on every change and once a week.
+The optional extras are tested separately by [extras-test](.github/workflows/extras-test.yml).
 
 ## Notes
 
@@ -208,5 +343,5 @@ The full installation is tested automatically on a clean Ubuntu 24.04 machine by
 ## License
 
 The scripts in this repository are released under the [MIT License](LICENSE).
-ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++ and NuCraft are separate projects under their own licenses.
+ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++, CORSIKA, gSeaGen, APFEL and NuCraft are separate projects under their own licenses.
 If you use them in published work, cite them as their authors request.

@@ -37,6 +37,22 @@ check "GENIE"     genie_ok
 check "OscProb"   python -c "import ROOT; assert ROOT.gSystem.Load('libOscProb') >= 0; p = ROOT.OscProb.PMNS_Fast(); print('P(numu->numu, 1000 km, 5 GeV) = %.4f' % p.Prob(1, 1, 5.0))"
 check "Prob3++"   python -c "from BargerPropagator import BargerPropagator; b = BargerPropagator(); print('loaded from', __import__('BargerPropagator').__file__)"
 check "Python"    python -c "import numpy, scipy, pandas, matplotlib, uproot, awkward, hist, mplhep, iminuit; print('scientific stack ok')"
+if [ -d "$CONDA_PREFIX/opt/corsika/run" ]; then
+    # shellcheck disable=SC2016
+    check "CORSIKA"   bash -c 'ls "$CONDA_PREFIX"/opt/corsika/run/corsika7*Linux_* | head -n1 | xargs basename'
+fi
+if [ -d "$CONDA_PREFIX/opt/corsika8" ]; then
+    # shellcheck disable=SC2016
+    check "CORSIKA 8"  bash -c 'cat "$CONDA_PREFIX/opt/corsika8/.built" && test -d "$CORSIKA_DATA"'
+fi
+if [ -d "$CONDA_PREFIX/opt/apfel" ]; then
+    # shellcheck disable=SC2016
+    check "GENIE+APFEL" bash -c 'ldd "$GENIE"/lib/*.so | grep -q libAPFEL && echo "HEDIS can use NLO structure functions"'
+    check "HERAPDF15"  test -d "$(lhapdf-config --datadir)/HERAPDF15NLO_EIG"
+fi
+if [ -d "$CONDA_PREFIX/opt/gseagen" ]; then
+    check "gSeaGen"   command -v gSeaNuEvGen
+fi
 if [ -d "$CONDA_PREFIX/opt/nucraft" ]; then
     check "NuCraft"   python -c "import NuCraft; print(NuCraft.__file__)"
 fi

@@ -47,7 +47,6 @@ git -c advice.detachedHead=false clone --depth 1 --branch "$OSCPROB_VERSION" \
 sed -i '/add_root_dictionary(MatrixDecomp/d' "$SRC/MatrixDecomp/CMakeLists.txt"
 
 # Eigen comes from the conda environment, so the eigen git submodule is not needed.
-   
 cmake -S "$SRC" -B "$SRC/build" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$DIR" \

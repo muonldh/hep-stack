@@ -1,7 +1,7 @@
 # Conda environment for high energy physics work.
 # Everything here is a prebuilt package from conda-forge.
-# GENIE, OscProb and Prob3++ are not on conda-forge; the scripts in scripts/
-# compile them inside this environment.
+# GENIE, OscProb, Prob3++ and the optional extras are not on conda-forge;
+# the scripts in scripts/ compile them inside this environment.
 
 name: hep
 channels:
@@ -19,6 +19,8 @@ dependencies:
   # Needed to compile GENIE
   - c-compiler
   - cxx-compiler
+  - fortran-compiler     # for CORSIKA 7, CORSIKA 8 and APFEL
+  - wget
   - make
   - perl
   - git
@@ -37,6 +39,10 @@ dependencies:
 
   # Needed to build OscProb (tested upstream with Eigen 3.4)
   - eigen=3.4
+
+  # Needed only for the optional CORSIKA 8 build (bash install.sh --with corsika8)
+  - conan
+  - git-lfs
 
   # Python analysis stack (Scikit-HEP and friends)
   - numpy
