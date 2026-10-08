@@ -94,6 +94,9 @@ cmake -S "$DIR/resources/LeptonInjector" -B "$LI_BUILD" \
 cmake --build "$LI_BUILD" -j "$JOBS"
 cmake --install "$LI_BUILD"
 rm -rf "$LI_BUILD"
+# If a shared library is missing, show which one before the import fails.
+SITE="$(python -c 'import sysconfig; print(sysconfig.get_paths()["platlib"])')"
+ldd "$SITE/LeptonInjector.so" | grep 'not found' || true
 python -c "import LeptonInjector; print('LeptonInjector OK')"
 
 # --- 4. LeptonWeighter ----------------------------------------------------------

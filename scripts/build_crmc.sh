@@ -60,6 +60,13 @@ echo "CRMC source: $SRC"
 perl -0pi -e 's/(find_package\s*\(\s*Boost[^)]*?)\s+system\b/$1/ig' "$SRC/CMakeLists.txt"
 grep -inE 'find_package *\( *Boost' "$SRC/CMakeLists.txt" || true
 
+# The HepMC output writer defines operator<< for a protected nested struct (Stat).
+# Older GCC accepted this; GCC 15 does not. Make the struct public.
+for h in "$SRC"/src/OutputPolicy*.h; do
+    [ -f "$h" ] || continue
+    perl -0pi -e 's/^([ \t]*)((?:template\s*<[^>]*>\s*)?struct\s+Stat\s*\{)/ public:\n$1$2/m' "$h"
+done
+
 # The interaction models are decades-old Fortran and C. Current compilers are
 # stricter by default; these flags restore the older rules without changing the code.
 cmake -S "$SRC" -B "$WORK/build" \
