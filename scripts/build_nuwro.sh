@@ -66,7 +66,9 @@ cmake -S "$EGP-src" -B "$EGP-src/build" \
     -DROOTEGPythia6_Pythia6_BUILTIN=ON
 cmake --build "$EGP-src/build" --target install -j "$JOBS"
 [ -f "$EGP/lib/libEGPythia6.so" ] || { echo "ERROR: libEGPythia6.so was not installed."; exit 1; }
-rm -rf "$EGP-src"
+# ROOT's dictionary for TPythia6 records the header paths inside the source folder
+# (inc/). Keep those headers, or ROOT prints "Missing FileEntry" errors at startup.
+rm -rf "$EGP-src/build" "$EGP-src/.git"
 
 # --- 2. NuWro -----------------------------------------------------------------
 step "downloading NuWro $NUWRO_VERSION"
