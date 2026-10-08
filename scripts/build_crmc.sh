@@ -61,6 +61,7 @@ cmake -S "$SRC" -B "$WORK/build" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$DIR" \
     -DCMAKE_PREFIX_PATH="$P" \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_C_COMPILER="$CC" -DCMAKE_CXX_COMPILER="$CXX" -DCMAKE_Fortran_COMPILER="$FC" \
     -DCMAKE_C_FLAGS="-std=gnu17 -fcommon" \
     -DCMAKE_Fortran_FLAGS="-std=legacy -fallow-argument-mismatch" \

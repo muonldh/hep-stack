@@ -78,6 +78,12 @@ cd "$DIR"
 export ROOTSYS="$P"
 export ROOTEGPythia6_ROOT="$EGP"
 
+# Some NuWro sources use TMath:: without including TMath.h. Older ROOT versions
+# pulled it in through other headers; current ROOT does not. Add the include.
+grep -rlE 'TMath::' src --include='*.cc' --include='*.cxx' --include='*.h' | while read -r f; do
+    grep -qE '#include *[<"]TMath.h[>"]' "$f" || sed -i '1i #include "TMath.h"' "$f"
+done
+
 # NuWro's Makefile hard-codes g++/gfortran and its link flags. Use the
 # environment's compilers and add RPATHs so the programs find ROOT and Pythia 6
 # at run time without extra environment variables.

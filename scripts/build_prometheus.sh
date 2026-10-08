@@ -78,12 +78,17 @@ echo "Prometheus commit $COMMIT"
 
 # --- 3. LeptonInjector ----------------------------------------------------------
 step "LeptonInjector (Prometheus' vendored copy)"
+# Its Python module uses Boost.Python (libboost-python-devel in environment.yml).
+# Tell Boost which Python build to use and point CMake at the environment's Python.
+PYVER="$(python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
 LI_BUILD="$(mktemp -d)"
 cmake -S "$DIR/resources/LeptonInjector" -B "$LI_BUILD" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="$P" \
     -DCMAKE_PREFIX_PATH="$P" \
     -DPython_EXECUTABLE="$P/bin/python" \
+    -DPYTHON_EXECUTABLE="$P/bin/python" \
+    -DBoost_PYTHON_VERSION="$PYVER" \
     -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
     -DCMAKE_INSTALL_RPATH="$P/lib"
 cmake --build "$LI_BUILD" -j "$JOBS"
