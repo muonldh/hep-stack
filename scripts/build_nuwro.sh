@@ -89,7 +89,7 @@ done
 # at run time without extra environment variables.
 MAKE_VARS=(
     CXX="$CXX" CC="$CXX" LD="$CXX" FC="$FC"
-    LDFLAGS="$(root-config --libs) -L$EGP/lib -Wl,-rpath,$EGP/lib -Wl,-rpath,$P/lib -L$P/lib -lEGPythia6 -lPythia6 -lGeom -lMinuit -lgfortran"
+    LDFLAGS="$(root-config --libs) -L$EGP/lib -Wl,-rpath,$EGP/lib -Wl,-rpath-link,$EGP/lib -Wl,-rpath,$P/lib -L$P/lib -lEGPythia6 -lPythia6 -lGeom -lMinuit -lgfortran"
 )
 
 step "compiling with $JOBS jobs"
