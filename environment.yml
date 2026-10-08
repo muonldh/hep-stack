@@ -49,6 +49,7 @@ dependencies:
   - tbb-devel            # gSeaGen (ROOT's link flags include -ltbb)
   - hepmc3               # CRMC event output
   - photospline          # LeptonInjector, LeptonWeighter (Prometheus)
+  - libopenblas          # photospline links libopenblas.so.0 but does not pull it in
   - pybind11             # LeptonInjector, LeptonWeighter (Prometheus)
   - scikit-build-core    # LeptonWeighter (Prometheus)
   - hdf5                 # LeptonInjector, LeptonWeighter (Prometheus)
