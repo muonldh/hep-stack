@@ -2,6 +2,7 @@
 # Everything here is a prebuilt package from conda-forge.
 # GENIE, OscProb, Prob3++ and the optional extras are not on conda-forge;
 # the scripts in scripts/ compile them inside this environment.
+# A few Python packages that are only on PyPI are installed with pip (bottom).
 
 name: hep
 channels:
@@ -19,7 +20,7 @@ dependencies:
   # Needed to compile GENIE
   - c-compiler
   - cxx-compiler
-  - fortran-compiler     # for CORSIKA 7, CORSIKA 8 and APFEL
+  - fortran-compiler     # for CORSIKA 8, APFEL, CRMC and NuWro (Pythia 6)
   - wget
   - make
   - perl
@@ -43,8 +44,30 @@ dependencies:
   # Needed only for the optional extras (bash install.sh --with ...)
   - conan                # CORSIKA 8
   - git-lfs              # CORSIKA 8
-  - libboost-devel       # gSeaGen
+  - libboost-devel       # gSeaGen, CRMC, LeptonInjector
   - tbb-devel            # gSeaGen (ROOT's link flags include -ltbb)
+  - hepmc3               # CRMC event output
+  - photospline          # LeptonInjector, LeptonWeighter (Prometheus)
+  - pybind11             # LeptonInjector, LeptonWeighter (Prometheus)
+  - scikit-build-core    # LeptonWeighter (Prometheus)
+  - hdf5                 # LeptonInjector, LeptonWeighter (Prometheus)
+
+  # Data formats
+  - pyarrow              # Apache Parquet (also used by Prometheus and CORSIKA 8 output)
+  - yaml-cpp
+  - h5py
+  - pyyaml
+  - tqdm
+
+  # Machine learning
+  - scikit-learn         # logistic regression, MLP and other classic models
+  - xgboost              # gradient-boosted trees
+  - pytorch              # neural networks, including CNNs
+  - torchvision          # image models and CNN building blocks for PyTorch
+  - pytorch_geometric    # graph neural networks (PyG)
+  - jax                  # used by Fennel, Hyperion and Prometheus
+  - jaxlib
+  - optax
 
   # Python analysis stack (Scikit-HEP and friends)
   - numpy
@@ -59,3 +82,10 @@ dependencies:
   - iminuit
   - vector
   - particle
+
+  # Python packages only available on PyPI
+  - pip
+  - pip:
+      - MCEq                # atmospheric lepton fluxes (Matrix Cascade Equations)
+      - chromo              # EPOS, QGSJet, Sibyll, DPMJET, Pythia and UrQMD from Python
+      - fennel_seed @ https://github.com/MeighenBergerS/fennel/archive/refs/tags/v2.1.0.tar.gz   # light yields (Prometheus uses v2.1.0)

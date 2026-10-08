@@ -6,10 +6,15 @@
 #   bash install.sh --rebuild        force fresh builds of GENIE, OscProb and Prob3++
 #   bash install.sh --yes            never ask questions (for automated runs)
 #
-# Optional extras (can be combined, e.g. --with corsika8 --with gseagen):
-#   bash install.sh --with corsika8  CORSIKA 8 air showers / atmospheric muons (1-2 hours)
-#   bash install.sh --with gseagen   gSeaGen with GENIE's ultra-high-energy model (adds APFEL,
-#                                    rebuilds GENIE once with it)
+# Optional extras (can be combined, e.g. --with nuwro --with nucdeex, or --with all):
+#   bash install.sh --with gseagen     gSeaGen with GENIE's ultra-high-energy model (adds APFEL,
+#                                      rebuilds GENIE once with it)
+#   bash install.sh --with corsika8    CORSIKA 8 air showers / atmospheric muons (1-2 hours)
+#   bash install.sh --with crmc        CRMC cosmic-ray interaction models
+#   bash install.sh --with nuwro       NuWro neutrino event generator
+#   bash install.sh --with nucdeex     NucDeEx nuclear de-excitation (with NuWro interface if
+#                                      NuWro is installed)
+#   bash install.sh --with prometheus  Prometheus, PROPOSAL, LeptonInjector, LeptonWeighter
 
 set -eo pipefail
 
@@ -21,12 +26,22 @@ ASSUME_YES=0
 REBUILD_ARGS=()
 WITH_CORSIKA8=0
 WITH_GSEAGEN=0
+WITH_CRMC=0
+WITH_NUWRO=0
+WITH_NUCDEEX=0
+WITH_PROMETHEUS=0
+EXTRAS="gseagen, corsika8, crmc, nuwro, nucdeex, prometheus or all"
 
 add_extra() {
     case "$1" in
-        corsika8) WITH_CORSIKA8=1 ;;
-        gseagen)  WITH_GSEAGEN=1 ;;
-        *) echo "Unknown extra: $1 (choose corsika8 or gseagen)"; exit 1 ;;
+        gseagen)    WITH_GSEAGEN=1 ;;
+        corsika8)   WITH_CORSIKA8=1 ;;
+        crmc)       WITH_CRMC=1 ;;
+        nuwro)      WITH_NUWRO=1 ;;
+        nucdeex)    WITH_NUCDEEX=1 ;;
+        prometheus) WITH_PROMETHEUS=1 ;;
+        all)        for e in gseagen corsika8 crmc nuwro nucdeex prometheus; do add_extra "$e"; done ;;
+        *) echo "Unknown extra: $1 (choose $EXTRAS)"; exit 1 ;;
     esac
 }
 
@@ -35,10 +50,10 @@ while [ $# -gt 0 ]; do
         --auto-activate) AUTO_ACTIVATE=1 ;;
         --rebuild|--rebuild-genie) REBUILD_ARGS+=(--rebuild) ;;
         --yes|-y)        ASSUME_YES=1 ;;
-        --with)          [ -n "${2:-}" ] || { echo "--with needs a name: corsika8 or gseagen"; exit 1; }
+        --with)          [ -n "${2:-}" ] || { echo "--with needs a name: $EXTRAS"; exit 1; }
                          add_extra "$2"; shift ;;
         --with=*)        add_extra "${1#--with=}" ;;
-        -h|--help)       sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)       sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown option: $1 (see: bash install.sh --help)"; exit 1 ;;
     esac
     shift
@@ -118,6 +133,10 @@ bash "$REPO_DIR/scripts/build_oscprob.sh" "${REBUILD_ARGS[@]}"
 say "Building Prob3++"
 bash "$REPO_DIR/scripts/build_prob3pp.sh" "${REBUILD_ARGS[@]}"
 
+# Geant4's NuDEX model needs an optional dataset that conda-forge does not ship.
+say "Installing the Geant4 NuDEX dataset"
+bash "$REPO_DIR/scripts/install_g4_nudex.sh"
+
 # --- Optional extras ---------------------------------------------------------
 if [ "$WITH_GSEAGEN" = 1 ]; then
     say "Building GENIE ReWeight (needed by gSeaGen)"
@@ -128,6 +147,23 @@ fi
 if [ "$WITH_CORSIKA8" = 1 ]; then
     say "Building CORSIKA 8 (the first build takes one to two hours)"
     bash "$REPO_DIR/scripts/build_corsika8.sh" "${REBUILD_ARGS[@]}"
+fi
+if [ "$WITH_CRMC" = 1 ]; then
+    say "Building CRMC"
+    bash "$REPO_DIR/scripts/build_crmc.sh" "${REBUILD_ARGS[@]}"
+fi
+# NuWro before NucDeEx, so NucDeEx can build its NuWro interface.
+if [ "$WITH_NUWRO" = 1 ]; then
+    say "Building NuWro"
+    bash "$REPO_DIR/scripts/build_nuwro.sh" "${REBUILD_ARGS[@]}"
+fi
+if [ "$WITH_NUCDEEX" = 1 ]; then
+    say "Building NucDeEx"
+    bash "$REPO_DIR/scripts/build_nucdeex.sh" "${REBUILD_ARGS[@]}"
+fi
+if [ "$WITH_PROMETHEUS" = 1 ]; then
+    say "Building Prometheus with PROPOSAL, LeptonInjector and LeptonWeighter"
+    bash "$REPO_DIR/scripts/build_prometheus.sh" "${REBUILD_ARGS[@]}"
 fi
 
 # Re-activate so the activation hooks written by the build scripts take effect.

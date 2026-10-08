@@ -5,7 +5,8 @@
 
 One command to install a complete high energy physics software environment on Linux or Windows (WSL):
 ROOT, Geant4, Pythia 8, LHAPDF, the GENIE neutrino event generator, the OscProb, Prob3++ and NuCraft
-oscillation codes, and the Scikit-HEP Python analysis tools.
+oscillation codes, MCEq, chromo, the Scikit-HEP Python analysis tools and a machine-learning stack,
+plus optional extras such as CORSIKA 8, gSeaGen, NuWro, NucDeEx, CRMC and Prometheus.
 
 No compiling ROOT for an hour, no sudo, no editing paths by hand.
 
@@ -20,12 +21,25 @@ No compiling ROOT for an hour, no sudo, no editing paths by hand.
 | [GENIE](https://github.com/GENIE-MC/Generator) (R-3_06_02) | Neutrino event generator | compiled by `scripts/build_genie.sh` |
 | [OscProb](https://github.com/joaoabcoelho/OscProb) (v2.4.0) | Oscillation probabilities with PREM, NSI, sterile, decoherence | compiled by `scripts/build_oscprob.sh` |
 | [Prob3++](https://github.com/rogerwendell/Prob3plusplus) (v3r20) | Super-Kamiokande's oscillation probability code | compiled by `scripts/build_prob3pp.sh` |
-| [CORSIKA 7](https://www.iap.kit.edu/corsika/) (7.8050), optional | Air showers and atmospheric muons | needs your own KIT password; compiled by `scripts/build_corsika.sh` |
 | [CORSIKA 8](https://gitlab.iap.kit.edu/AirShowerPhysics/corsika), optional | Open-source air showers and atmospheric muons | `bash install.sh --with corsika8`; compiled by `scripts/build_corsika8.sh` |
 | [gSeaGen](https://git.km3net.de/opensource/gseagen), optional | GENIE-based generator for neutrino telescopes, up to ultra-high energies | `bash install.sh --with gseagen`; adds [APFEL](https://github.com/scarrazza/apfel) 3.1.1 and builds GENIE with it |
 | [NuCraft](https://arxiv.org/abs/1409.1387) | Atmospheric neutrino oscillation probabilities | bundled in `extern/nucraft`, installed by `scripts/install_nucraft.sh` |
+| [CRMC](https://doi.org/10.5281/zenodo.5270381) (2.0.1), optional | Cosmic-ray interaction models (EPOS, QGSJet, Sibyll, ...) | `bash install.sh --with crmc`; compiled by `scripts/build_crmc.sh` |
+| [NuWro](https://github.com/NuWro/nuwro) (25.11), optional | Neutrino event generator | `bash install.sh --with nuwro`; compiled with [ROOTEGPythia6](https://github.com/luketpickering/ROOTEGPythia6) by `scripts/build_nuwro.sh` |
+| [NucDeEx](https://github.com/SeishoAbe/NucDeEx) (v2.2.6), optional | Nuclear de-excitation after neutrino interactions and nucleon decay | `bash install.sh --with nucdeex`; compiled by `scripts/build_nucdeex.sh` |
+| [Prometheus](https://github.com/Harvard-Neutrino/prometheus), optional | Neutrino telescope simulation (includes Hyperion and Olympus) | `bash install.sh --with prometheus`, together with [PROPOSAL](https://github.com/tudo-astroparticlephysics/PROPOSAL) 7.6.2, [LeptonInjector](https://github.com/icecube/LeptonInjector) and [LeptonWeighter](https://github.com/icecube/LeptonWeighter) 1.2.0 |
+| [MCEq](https://github.com/afedynitch/MCEq) | Atmospheric lepton fluxes (Matrix Cascade Equations) | PyPI package |
+| [chromo](https://github.com/impy-project/chromo) | EPOS, QGSJet, Sibyll, DPMJET, Pythia and UrQMD from Python | PyPI package |
+| [Fennel](https://github.com/MeighenBergerS/fennel) (2.1.0) | Cherenkov light yields of particles and showers | installed from GitHub with the environment |
+| Apache Parquet (pyarrow), yaml-cpp, HDF5 (h5py), HepMC3 | Data formats | conda-forge packages |
+| scikit-learn, XGBoost, PyTorch, torchvision, PyTorch Geometric, JAX | Machine learning (see below) | conda-forge packages |
 | numpy, scipy, pandas, matplotlib, JupyterLab | General scientific Python | conda-forge packages |
 | uproot, awkward, hist, mplhep, iminuit, vector, particle | [Scikit-HEP](https://scikit-hep.org) analysis tools | conda-forge packages |
+
+Geant4 also includes **Geant4-DNA** (track-structure physics in water) and **NuDEX**
+(neutron-capture gamma cascades). Both are part of the conda-forge Geant4 package; NuDEX's
+optional data library (`G4NUDEXLIB`), which conda-forge does not ship, is downloaded by the
+installer and found through `G4NUDEXLIBDATA`.
 
 Everything lives in one conda environment called `hep`, so it cannot interfere with the rest of your system.
 
@@ -84,7 +98,7 @@ Expected output:
   [ok]   PyROOT         6.xx/xx
   [ok]   Geant4         11.x.x
   ...
-11 passed, 0 failed
+19 passed, 0 failed
 ```
 
 To confirm you can compile your own Geant4 programs, build and run Geant4's example B1:
@@ -161,71 +175,11 @@ built-in `bool` directly after that import in the installed copy. Before NumPy 1
 was the built-in `bool` itself, so this reproduces the behaviour NuCraft was written for.
 No physics code is changed and no checks are removed.
 
-## CORSIKA 7 (optional)
-
-CORSIKA simulates cosmic-ray air showers and gives the muons (and other particles)
-arriving at the surface. It is not open source, so `install.sh` does not install it
-and this repository does not contain it. Each user needs their own download password:
-
-1. Register as described on the [CORSIKA download page](https://www.iap.kit.edu/corsika/79.php).
-   KIT sends you the password by e-mail. Do not share the password or the code;
-   KIT asks new users to register themselves.
-2. Build it inside the environment (about 10 minutes):
-
-   ```bash
-   conda activate hep
-   cd ~/hep-stack
-   bash scripts/build_corsika.sh
-   ```
-
-   It asks for the password, downloads CORSIKA 7.8050, and starts CORSIKA's own
-   configuration tool, `coconut`. The script prints suggested answers; for muon
-   production SIBYLL 2.3e (high energy) with UrQMD (low energy) is a good default.
-   If the download fails, fetch `corsika-78050.tar.gz` in a browser and run
-   `bash scripts/build_corsika.sh ~/Downloads/corsika-78050.tar.gz`.
-
-3. Test run: 100 proton showers from 100 GeV to 10 TeV, muons only (no EM cascade):
-
-   ```bash
-   conda activate hep
-   mkdir -p ~/corsika_test && cd ~/corsika_test
-   cat > muons.inp <<EOF
-   RUNNR   1
-   EVTNR   1
-   NSHOW   100
-   PRMPAR  14
-   ESLOPE  -2.7
-   ERANGE  1.E2  1.E4
-   THETAP  0.  70.
-   PHIP    -180.  180.
-   SEED    1  0  0
-   SEED    2  0  0
-   SEED    3  0  0
-   OBSLEV  0.
-   ECUTS   0.3  0.3  0.003  0.003
-   ELMFLG  F  F
-   MUMULT  T
-   MAXPRT  0
-   DATDIR  $CORSIKA_RUN/
-   DIRECT  ./
-   EXIT
-   EOF
-   $CORSIKA_RUN/corsika78050Linux_SIBYLL_urqmd < muons.inp > muons.lst
-   tail -n 20 muons.lst
-   ```
-
-   The particles at ground level are in the binary file `DAT000001`; `muons.lst` is the run log.
-   In Python you can read `DAT000001` with [corsikaio](https://github.com/cta-observatory/pycorsikaio)
-   (`pip install corsikaio`). For a real study, set `OBSLEV` (cm) and `MAGNET` (µT) for your
-   site and `NSHOW`, `ERANGE` and the primaries for your flux model; all keywords are
-   described in Section 4 of `$CORSIKA_DIR/doc/CORSIKA_GUIDE7.8050.pdf`.
-
-CORSIKA gives muons at the surface. Underground detectors such as JUNO still need the muons
-transported through the rock overburden with a separate code.
-
 ## CORSIKA 8 (optional)
 
 CORSIKA 8 is the open-source successor of CORSIKA 7 (GPLv3, no registration needed).
+It simulates cosmic-ray air showers and gives the muons and other particles arriving at an
+observation level.
 Install it with:
 
 ```bash
@@ -279,14 +233,71 @@ Like any GENIE application, gSeaGen needs cross-section splines for the tune you
 For ultra-high energies that is `GHE19_00b_00_000`; the first run with it also computes
 the structure-function tables with APFEL, which takes a while once.
 
+## Machine learning
+
+| Model | Package | Example |
+|---|---|---|
+| Logistic regression | scikit-learn | `from sklearn.linear_model import LogisticRegression` |
+| Multilayer perceptron (MLP) | scikit-learn or PyTorch | `from sklearn.neural_network import MLPClassifier` |
+| Gradient-boosted trees | XGBoost | `from xgboost import XGBClassifier` |
+| Convolutional neural network (CNN) | PyTorch (+ torchvision) | `torch.nn.Conv2d`, `torchvision.models` |
+| Graph neural network (GNN) | PyTorch Geometric | `from torch_geometric.nn import GCNConv, EdgeConv` |
+
+PyTorch is installed as the CPU build, which works on every machine. With an NVIDIA GPU,
+conda-forge can install a CUDA build instead (`conda install -n hep "pytorch=*=cuda*"`).
+
+## CRMC and chromo
+
+Both give access to the hadronic interaction models used in air-shower physics.
+
+- **chromo** is installed by default: `import chromo` in Python, or the `chromo` command.
+- **CRMC** is the classic C++/Fortran package (`bash install.sh --with crmc`). After
+  `conda activate hep`, run `crmc --help`.
+
+## NuWro and NucDeEx (optional)
+
+```bash
+cd ~/hep-stack
+bash install.sh --with nuwro --with nucdeex
+```
+
+**NuWro** is built against current ROOT using ROOTEGPythia6, the Pythia 6 interface NuWro
+itself recommends. After `conda activate hep`, `nuwro` is on your path; copy
+`$NUWRO/data/params.txt` to your working folder and edit it to set up a run (see the
+[NuWro user guide](https://nuwro.github.io/user-guide/)).
+
+**NucDeEx** simulates the gamma rays, neutrons and protons emitted when the residual
+nucleus de-excites after a neutrino interaction or nucleon decay (12C and 16O targets,
+TALYS-based). `NUCDEEX_ROOT` is set on activation. Its programs include:
+
+- `simulation`: stand-alone de-excitation events, e.g. `simulation 11B 2 1 1`
+- `genie`: adds de-excitation to GENIE output files
+- `nuwro`: adds de-excitation to NuWro output files (built when NuWro is installed first,
+  as with the command above)
+
+## Prometheus (optional)
+
+```bash
+cd ~/hep-stack
+bash install.sh --with prometheus
+```
+
+Installs the Prometheus neutrino-telescope simulation with everything it is built on:
+PROPOSAL (lepton propagation, compiled during the install), LeptonInjector, LeptonWeighter
+and Fennel. Prometheus' own photon-propagation models, Hyperion and Olympus, come with it.
+Photon propagation with IceCube's `ppc` code is optional in Prometheus and is not installed;
+see the [Prometheus documentation](https://github.com/Harvard-Neutrino/prometheus) if you need it.
+
 ## How the generators fit together
 
 | Step | Tool | Connection |
 |---|---|---|
-| Cosmic-ray air showers, atmospheric muons | CORSIKA 7 or 8 | particles at an observation level, written to file |
+| Cosmic-ray air showers, atmospheric muons | CORSIKA 8, CRMC, chromo, MCEq | CORSIKA 8 writes particles at an observation level; CRMC and chromo give single interactions; MCEq gives inclusive fluxes |
 | Muons reaching the detector | Geant4 | read the CORSIKA muons as primary particles in your Geant4 application |
-| Neutrino interactions, GeV scale | GENIE (`gevgen`, `gevgen_atmo`) | atmospheric fluxes as input tables |
-| Neutrino interactions in a telescope, up to EeV | gSeaGen | built on the same GENIE |
+| Neutrino interactions, GeV scale | GENIE (`gevgen`, `gevgen_atmo`), NuWro | atmospheric fluxes as input tables (MCEq can produce them) |
+| Nuclear de-excitation | NucDeEx | added to GENIE or NuWro output files |
+| Neutrino interactions in a telescope, up to EeV | gSeaGen, Prometheus (LeptonInjector) | gSeaGen is built on the same GENIE |
+| Lepton propagation and light in water or ice | PROPOSAL, Fennel, Hyperion | used inside Prometheus; PROPOSAL also on its own |
 | Oscillation weights | OscProb, Prob3++, NuCraft | applied to GENIE or gSeaGen events afterwards |
 
 The codes are joined through their output files rather than linked into one program,
@@ -318,7 +329,7 @@ Miniforge itself lives in `~/miniforge3`. To remove it as well, delete that fold
 
 1. **Conda.** `install.sh` finds an existing conda installation or installs Miniforge.
 2. **Environment.** It creates the `hep` environment from `environment.yml`, using only the community-maintained [conda-forge](https://conda-forge.org) channel.
-3. **GENIE, OscProb, Prob3++ and NuCraft.** These are not available as conda packages. `scripts/build_genie.sh`, `scripts/build_oscprob.sh` and `scripts/build_prob3pp.sh` compile them inside the environment with the environment's own compilers and libraries, then register conda activation hooks, so `conda activate hep` sets `GENIE`, `OSCPROB_DIR`, `PROB3PP`, `PATH`, `LD_LIBRARY_PATH` and `ROOT_INCLUDE_PATH` for you. `scripts/install_nucraft.sh` copies the bundled NuCraft into the environment and applies its NumPy 2 fix.
+3. **GENIE, OscProb, Prob3++ and NuCraft.** These are not available as conda packages (the optional extras are built the same way, by their own scripts in `scripts/`). `scripts/build_genie.sh`, `scripts/build_oscprob.sh` and `scripts/build_prob3pp.sh` compile them inside the environment with the environment's own compilers and libraries, then register conda activation hooks, so `conda activate hep` sets `GENIE`, `OSCPROB_DIR`, `PROB3PP`, `PATH`, `LD_LIBRARY_PATH` and `ROOT_INCLUDE_PATH` for you. `scripts/install_nucraft.sh` copies the bundled NuCraft into the environment and applies its NumPy 2 fix.
 4. **Test.** `scripts/check_install.sh` verifies each component.
 
 The full installation is tested automatically on a clean Ubuntu 24.04 machine by
@@ -344,5 +355,5 @@ The optional extras are tested separately by [extras-test](.github/workflows/ext
 ## License
 
 The scripts in this repository are released under the [MIT License](LICENSE).
-ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++, CORSIKA, gSeaGen, APFEL and NuCraft are separate projects under their own licenses.
+ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++, CORSIKA 8, gSeaGen, APFEL, CRMC, chromo, MCEq, NuWro, NucDeEx, Prometheus, PROPOSAL, LeptonInjector, LeptonWeighter, Fennel and NuCraft are separate projects under their own licenses.
 If you use them in published work, cite them as their authors request.
