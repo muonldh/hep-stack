@@ -117,6 +117,26 @@ fi
 
 conda activate "$ENV_NAME"
 
+# If an environment update changed the ROOT version, the packages compiled against
+# the old ROOT can no longer load it. Remove their build stamps so they are rebuilt.
+ROOT_NOW="$(root-config --version)"
+ROOT_FILE="$CONDA_PREFIX/opt/.root-version"
+ROOT_CHANGED=0
+if [ -f "$ROOT_FILE" ]; then
+    [ "$(cat "$ROOT_FILE")" != "$ROOT_NOW" ] && ROOT_CHANGED=1
+elif [ -x "$CONDA_PREFIX/opt/genie/bin/gevgen" ] \
+     && grep -q 'not found' <<< "$(ldd "$CONDA_PREFIX/opt/genie/bin/gevgen" 2>&1)"; then
+    ROOT_CHANGED=1    # installs made before this check existed
+fi
+if [ "$ROOT_CHANGED" = 1 ]; then
+    say "ROOT is now $ROOT_NOW: rebuilding the packages compiled against the old version"
+    for pkg in genie oscprob genie-reweight gseagen nuwro nucdeex; do
+        rm -f "$CONDA_PREFIX/opt/$pkg"/.built*
+    done
+fi
+mkdir -p "$CONDA_PREFIX/opt"
+echo "$ROOT_NOW" > "$ROOT_FILE"
+
 # --- 3. GENIE ----------------------------------------------------------------
 # For gSeaGen's ultra-high-energy neutrinos GENIE needs APFEL: build it first, so
 # GENIE is compiled with it in one go.
