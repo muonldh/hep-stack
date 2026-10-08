@@ -92,3 +92,10 @@ dependencies:
       - MCEq                # atmospheric lepton fluxes (Matrix Cascade Equations)
       - chromo              # EPOS, QGSJet, Sibyll, DPMJET, Pythia and UrQMD from Python
       - fennel_seed @ https://github.com/MeighenBergerS/fennel/archive/refs/tags/v2.1.0.tar.gz   # light yields (Prometheus uses v2.1.0)
+
+# Environment variables set on 'conda activate hep'.
+variables:
+  # JAX grabs 75% of the GPU memory at start-up by default, which fails (with
+  # long "out of memory" messages) when the GPU is shared with Windows or PyTorch.
+  # Allocate memory as needed instead.
+  XLA_PYTHON_CLIENT_PREALLOCATE: "false"
