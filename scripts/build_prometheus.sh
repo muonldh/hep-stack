@@ -104,6 +104,12 @@ step "LeptonWeighter $LEPTONWEIGHTER_VERSION"
 LW_SRC="$(mktemp -d)"
 git -c advice.detachedHead=false clone --depth 1 --branch "$LEPTONWEIGHTER_VERSION" \
     https://github.com/icecube/LeptonWeighter.git "$LW_SRC"
+# Some files use uint32_t and friends without including <cstdint>. Older GCC
+# pulled it in through other headers; GCC 15 does not. Add the include.
+grep -rlE '\bu?int(8|16|32|64)_t\b' "$LW_SRC/public" "$LW_SRC/private" \
+    --include='*.h' --include='*.cpp' | while read -r f; do
+    grep -qE '#include *<(cstdint|stdint\.h)>' "$f" || sed -i '1i #include <cstdint>' "$f"
+done
 python -m pip install --no-deps --no-build-isolation "$LW_SRC"
 rm -rf "$LW_SRC"
 python -c "import LeptonWeighter; print('LeptonWeighter OK')"
