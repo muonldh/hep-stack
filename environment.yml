@@ -23,6 +23,7 @@ dependencies:
   - fortran-compiler     # for CORSIKA 8, APFEL, CRMC and NuWro (Pythia 6)
   - wget
   - make
+  - pkg-config           # LeptonWeighter (Prometheus); not on every system
   - perl
   - git
   - gsl
