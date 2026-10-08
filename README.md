@@ -101,6 +101,10 @@ Expected output:
 19 passed, 0 failed
 ```
 
+Optional extras add their own checks: with `--with all` the result is `31 passed, 0 failed`.
+
+If a later `bash install.sh` updates ROOT to a new version, the installer rebuilds GENIE, OscProb and the other packages compiled against ROOT automatically.
+
 To confirm you can compile your own Geant4 programs, build and run Geant4's example B1:
 
 ```bash
