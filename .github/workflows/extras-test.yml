@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        extra: [gseagen, corsika8]
+        extra: [gseagen, corsika8, crmc, nuwro, nucdeex, prometheus]
     runs-on: ubuntu-24.04
     timeout-minutes: 330
     name: install --with ${{ matrix.extra }}
