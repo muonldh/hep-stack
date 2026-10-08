@@ -112,6 +112,18 @@ grep -rlE '\bu?int(8|16|32|64)_t\b' "$LW_SRC/public" "$LW_SRC/private" \
 done
 python -m pip install --no-deps --no-build-isolation "$LW_SRC"
 rm -rf "$LW_SRC"
+# On Linux the wheel puts libLeptonWeighter.so in site-packages/lib, where the
+# Python extension does not look (the official wheels fix this with auditwheel).
+# Copy it into the environment's lib folder, which is on the extension's RPATH.
+find "$SITE" -maxdepth 2 -name 'libLeptonWeighter*.so*' -exec cp -av {} "$P/lib/" \;
+if ! python -c "import LeptonWeighter" 2>/dev/null; then
+    # The extension has no RPATH to the environment's lib folder: add one.
+    python -m pip install --no-cache-dir patchelf
+    for so in "$SITE/LeptonWeighter/"LeptonWeighter*.so "$P"/lib/libLeptonWeighter*.so*; do
+        if [ -f "$so" ] && [ ! -L "$so" ]; then patchelf --add-rpath "$P/lib" "$so"; fi
+    done
+fi
+ldd "$SITE/LeptonWeighter/"LeptonWeighter*.so | grep 'not found' || true
 python -c "import LeptonWeighter; print('LeptonWeighter OK')"
 
 # --- 5. Prometheus --------------------------------------------------------------
