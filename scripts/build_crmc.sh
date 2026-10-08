@@ -55,6 +55,11 @@ SRC="$(dirname "$(find "$WORK" -maxdepth 3 -name CMakeLists.txt | sort | head -n
 [ -f "$SRC/CMakeLists.txt" ] || { echo "ERROR: no CMakeLists.txt found in the CRMC archive."; exit 1; }
 echo "CRMC source: $SRC"
 
+# CRMC asks for the Boost 'system' library. It has been header-only since Boost
+# 1.69 and the stub library was removed in Boost 1.89, so drop it from the request.
+perl -0pi -e 's/(find_package\s*\(\s*Boost[^)]*?)\s+system\b/$1/ig' "$SRC/CMakeLists.txt"
+grep -inE 'find_package *\( *Boost' "$SRC/CMakeLists.txt" || true
+
 # The interaction models are decades-old Fortran and C. Current compilers are
 # stricter by default; these flags restore the older rules without changing the code.
 cmake -S "$SRC" -B "$WORK/build" \
