@@ -256,7 +256,11 @@ Both give access to the hadronic interaction models used in air-shower physics.
 
 - **chromo** is installed by default: `import chromo` in Python, or the `chromo` command.
 - **CRMC** is the classic C++/Fortran package (`bash install.sh --with crmc`). After
-  `conda activate hep`, run `crmc --help`.
+  `conda activate hep`, run `crmc --help`. Example, 10 proton-proton collisions at
+  13 TeV with EPOS-LHC written as HepMC:
+  `crmc -n 10 -m 0 -p 6500 -P -6500 -o hepmc -f test.hepmc`.
+  The installed settings file (`$CRMC_DIR/etc/crmc.param`) is used automatically;
+  pass `-c your.param` to use your own.
 
 ## NuWro and NucDeEx (optional)
 
