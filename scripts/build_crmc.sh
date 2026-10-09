@@ -32,7 +32,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/env_hooks.sh"
 P="$CONDA_PREFIX"
 DIR="$P/opt/crmc"
 WORK="$P/opt/crmc-src"
-STAMP="$DIR/.built-$CRMC_VERSION"
+STAMP="$DIR/.built-$CRMC_VERSION-wrapper"
 
 if [ -f "$STAMP" ] && [ "$REBUILD" = 0 ]; then
     echo "CRMC $CRMC_VERSION already built in $DIR (use --rebuild to redo it)."
@@ -87,6 +87,23 @@ cmake --build "$WORK/build" --target install -j "$JOBS"
 EXE="$(find "$DIR" \( -type f -o -type l \) -name crmc | head -n 1)"
 [ -n "$EXE" ] && [ -x "$EXE" ] || { echo "ERROR: the crmc program was not installed."; exit 1; }
 echo "crmc installed at $EXE"
+
+# crmc looks for its settings file (crmc.param) only in the current folder unless
+# it is given with -c. Move the real program aside and install a small 'crmc'
+# wrapper that passes the installed crmc.param, unless the user gives -c.
+PARAM="$DIR/etc/crmc.param"
+[ -f "$PARAM" ] || { echo "ERROR: $PARAM was not installed."; exit 1; }
+mkdir -p "$DIR/libexec" "$DIR/bin"
+mv "$EXE" "$DIR/libexec/crmc"
+cat > "$DIR/bin/crmc" <<EOF
+#!/bin/bash
+# hep-stack wrapper: use the installed crmc.param unless -c / --config is given.
+for arg in "\$@"; do
+    case "\$arg" in -c|-c*|--c*) exec "$DIR/libexec/crmc" "\$@" ;; esac
+done
+exec "$DIR/libexec/crmc" -c "$PARAM" "\$@"
+EOF
+chmod +x "$DIR/bin/crmc"
 
 write_env_hooks crmc CRMC_DIR lib include
 # The $ signs are written literally into the hook file, so single quotes are intended.
