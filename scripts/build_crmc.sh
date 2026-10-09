@@ -47,7 +47,20 @@ rm -rf "$DIR" "$WORK"
 mkdir -p "$WORK"
 
 echo "Downloading CRMC $CRMC_VERSION (about 115 MB)..."
-curl -fL --retry 3 -o "$WORK/crmc.zip" "$CRMC_URL"
+# Zenodo sometimes drops long downloads part-way. Retry up to 5 times, resuming
+# where the last attempt stopped (-C -), and check the archive is complete.
+ok=0
+for attempt in 1 2 3 4 5; do
+    if curl -fL --retry 3 --retry-all-errors -C - -o "$WORK/crmc.zip" "$CRMC_URL" \
+       && python -c "import sys, zipfile; sys.exit(zipfile.ZipFile(sys.argv[1]).testzip() is not None)" "$WORK/crmc.zip"; then
+        ok=1; break
+    fi
+    echo "Download attempt $attempt failed; retrying in 15 s..."
+    # After two failed resumes, start again from scratch.
+    [ "$attempt" -ge 2 ] && rm -f "$WORK/crmc.zip"
+    sleep 15
+done
+[ "$ok" = 1 ] || { echo "ERROR: could not download CRMC from Zenodo. Try again later."; exit 1; }
 python -c "import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])" "$WORK/crmc.zip" "$WORK"
 rm "$WORK/crmc.zip"
 
