@@ -54,8 +54,18 @@ mkdir -p "$P/opt"
 step "downloading source and physics data (several GB)"
 BRANCH_ARGS=()
 [ -n "$CORSIKA8_VERSION" ] && BRANCH_ARGS=(--branch "$CORSIKA8_VERSION")
-git -c advice.detachedHead=false clone --recursive --depth 1 --shallow-submodules \
-    "${BRANCH_ARGS[@]}" https://gitlab.iap.kit.edu/AirShowerPhysics/corsika.git "$SRC"
+# The KIT GitLab server sometimes resets long connections. Retry a few times.
+ok=0
+for attempt in 1 2 3 4 5; do
+    rm -rf "$SRC"
+    if git -c advice.detachedHead=false clone --recursive --depth 1 --shallow-submodules \
+        "${BRANCH_ARGS[@]}" https://gitlab.iap.kit.edu/AirShowerPhysics/corsika.git "$SRC"; then
+        ok=1; break
+    fi
+    echo "Download attempt $attempt failed; retrying in 30 s..."
+    sleep 30
+done
+[ "$ok" = 1 ] || { echo "ERROR: could not download CORSIKA 8 from gitlab.iap.kit.edu. Check the connection and try again."; exit 1; }
 # Large data files may be stored with Git LFS. Fetch them without touching your
 # global git configuration (does nothing if the repository does not use LFS).
 git -C "$SRC" lfs install --local >/dev/null
