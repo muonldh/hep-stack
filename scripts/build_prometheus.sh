@@ -65,6 +65,15 @@ conan profile detect --exist-ok >/dev/null 2>&1 || true
 if ! grep -qs 'tools.build:cflags' "$CONAN_HOME/global.conf"; then
     echo 'tools.build:cflags=["-std=gnu17"]' >> "$CONAN_HOME/global.conf"
 fi
+
+# Make every package Conan builds use the environment's compilers. Without this,
+# Conan's Boost recipe picks the system compiler when one matching the version
+# exists (e.g. /usr/bin/g++-15 on Ubuntu 26.04). That compiles against the
+# system's newer C library, and linking then fails with "undefined reference to
+# statx / __isoc23_sscanf / getrandom".
+sed -i '/^tools.build:compiler_executables/d' "$CONAN_HOME/global.conf"
+echo "tools.build:compiler_executables={\"c\": \"$CC\", \"cpp\": \"$CXX\", \"fortran\": \"${FC:-$CONDA_PREFIX/bin/x86_64-conda-linux-gnu-gfortran}\"}" \
+    >> "$CONAN_HOME/global.conf"
 python -m pip install --no-cache-dir "proposal==$PROPOSAL_VERSION"
 python -c "import proposal; print('PROPOSAL', getattr(proposal, '__version__', 'ok'))"
 
