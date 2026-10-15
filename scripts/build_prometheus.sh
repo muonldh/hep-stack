@@ -8,7 +8,7 @@
 #   Prometheus      the simulation framework, including Hyperion and Olympus
 #                   (github.com/Harvard-Neutrino/prometheus)
 #
-# Fennel (light yields) is installed with the environment (environment.yml).
+# Fennel (light yields) is installed by install.sh (--with prometheus adds --with fennel).
 # Photon propagation with IceCube's PPC code is optional in Prometheus and is not
 # built here; see the Prometheus documentation if you need it.
 #

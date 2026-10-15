@@ -17,6 +17,10 @@ check() {
     fi
 }
 
+has_module() {
+    python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$1') is None)" 2>/dev/null
+}
+
 genie_ok() {
     [ -n "${GENIE:-}" ] || { echo "GENIE variable not set"; return 1; }
     [ -x "$GENIE/bin/gevgen" ] || { echo "gevgen not found"; return 1; }
@@ -35,17 +39,29 @@ check "G4 data"   geant4-config --check-datasets
 check "G4 NuDEX"  bash -c 'test -d "$G4NUDEXLIBDATA" && echo "$G4NUDEXLIBDATA"'
 check "Pythia 8"  test -f "$CONDA_PREFIX/include/Pythia8/Pythia.h"
 check "LHAPDF"    lhapdf-config --version
-check "GENIE"     genie_ok
-check "OscProb"   python -c "import ROOT; assert ROOT.gSystem.Load('libOscProb') >= 0; p = ROOT.OscProb.PMNS_Fast(); print('P(numu->numu, 1000 km, 5 GeV) = %.4f' % p.Prob(1, 1, 5.0))"
-check "Prob3++"   python -c "from BargerPropagator import BargerPropagator; b = BargerPropagator(); print('loaded from', __import__('BargerPropagator').__file__)"
+if [ -d "$CONDA_PREFIX/opt/genie" ]; then
+    check "GENIE"     genie_ok
+fi
+if [ -d "$CONDA_PREFIX/opt/oscprob" ]; then
+    check "OscProb"   python -c "import ROOT; assert ROOT.gSystem.Load('libOscProb') >= 0; p = ROOT.OscProb.PMNS_Fast(); print('P(numu->numu, 1000 km, 5 GeV) = %.4f' % p.Prob(1, 1, 5.0))"
+fi
+if [ -d "$CONDA_PREFIX/opt/prob3pp" ]; then
+    check "Prob3++"   python -c "from BargerPropagator import BargerPropagator; b = BargerPropagator(); print('loaded from', __import__('BargerPropagator').__file__)"
+fi
 check "Python"    python -c "import numpy, scipy, pandas, matplotlib, uproot, awkward, hist, mplhep, iminuit; print('scientific stack ok')"
 check "Data formats" python -c "import pyarrow, h5py, yaml; print('Parquet (pyarrow ' + pyarrow.__version__ + '), HDF5, YAML')"
 check "yaml-cpp"  test -f "$CONDA_PREFIX/include/yaml-cpp/yaml.h"
 check "ML"        python -c "import sklearn, xgboost, torch, torchvision, torch_geometric; print('scikit-learn', sklearn.__version__, '| xgboost', xgboost.__version__, '| torch', torch.__version__, '| PyG', torch_geometric.__version__)"
 check "JAX"       python -c "import jax, optax; print('jax', jax.__version__)"
-check "MCEq"      python -c "import MCEq; print(getattr(MCEq, '__version__', 'ok'))"
-check "chromo"    python -c "import chromo; print(chromo.__version__)"
-check "Fennel"    python -c "import fennel; print('ok')"
+if has_module MCEq; then
+    check "MCEq"      python -c "import MCEq; print(getattr(MCEq, '__version__', 'ok'))"
+fi
+if has_module chromo; then
+    check "chromo"    python -c "import chromo; print(chromo.__version__)"
+fi
+if has_module fennel; then
+    check "Fennel"    python -c "import fennel; print('ok')"
+fi
 if [ -d "$CONDA_PREFIX/opt/corsika8" ]; then
     # shellcheck disable=SC2016
     check "CORSIKA 8"  bash -c 'cat "$CONDA_PREFIX/opt/corsika8/.built" && test -d "$CORSIKA_DATA"'
