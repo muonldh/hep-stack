@@ -78,6 +78,9 @@ if [ -d "$CONDA_PREFIX/opt/prometheus" ]; then
     check "LeptonWeighter" python -c "import LeptonWeighter; print('ok')"
     check "Prometheus" python -c "import prometheus; print(prometheus.__file__)"
 fi
+if [ -d "$CONDA_PREFIX/opt/garfield" ]; then
+    check "Garfield++" python -c "import ROOT; assert ROOT.gSystem.Load('libGarfield') >= 0; g = ROOT.Garfield.MediumMagboltz('ar', 90., 'co2', 10.); import os; assert os.path.isdir(os.environ['HEED_DATABASE']); print('gas', g.GetName())"
+fi
 if [ -d "$CONDA_PREFIX/opt/nucraft" ]; then
     check "NuCraft"   python -c "import NuCraft; print(NuCraft.__file__)"
 fi
