@@ -1,14 +1,15 @@
 #!/bin/bash
 # One-command installer for the HEP software stack.
 #
-#   bash install.sh                  install everything
+#   bash install.sh                  install the core stack (see README for the list)
 #   bash install.sh --auto-activate  also activate the environment in every new terminal
-#   bash install.sh --rebuild        force fresh builds of GENIE, OscProb and Prob3++
+#   bash install.sh --rebuild        force fresh builds of the chosen extras
 #   bash install.sh --yes            never ask questions (for automated runs)
 #
 # Optional extras (can be combined, e.g. --with nuwro --with nucdeex, or --with all):
-#   bash install.sh --with gseagen     gSeaGen with GENIE's ultra-high-energy model (adds APFEL,
-#                                      rebuilds GENIE once with it)
+#   bash install.sh --with genie       GENIE neutrino event generator
+#   bash install.sh --with gseagen     gSeaGen with GENIE's ultra-high-energy model (adds GENIE
+#                                      and APFEL, and builds GENIE with APFEL)
 #   bash install.sh --with corsika8    CORSIKA 8 air showers / atmospheric muons (1-2 hours)
 #   bash install.sh --with crmc        CRMC cosmic-ray interaction models
 #   bash install.sh --with nuwro       NuWro neutrino event generator
@@ -16,6 +17,14 @@
 #                                      NuWro is installed)
 #   bash install.sh --with prometheus  Prometheus, PROPOSAL, LeptonInjector, LeptonWeighter
 #   bash install.sh --with garfield    Garfield++ gaseous/semiconductor detector simulation
+#   bash install.sh --with oscprob     OscProb neutrino oscillation probabilities
+#   bash install.sh --with prob3pp     Prob3++ neutrino oscillation probabilities
+#   bash install.sh --with nucraft     NuCraft neutrino oscillation probabilities
+#   bash install.sh --with oscillation all three oscillation codes above
+#   bash install.sh --with mceq        MCEq atmospheric lepton fluxes (Python)
+#   bash install.sh --with chromo      chromo: EPOS, QGSJet, Sibyll, ... from Python
+#   bash install.sh --with fennel      Fennel Cherenkov light yields (Python)
+#   bash install.sh --with astro       all three Python packages above
 
 set -eo pipefail
 
@@ -32,18 +41,35 @@ WITH_NUWRO=0
 WITH_NUCDEEX=0
 WITH_PROMETHEUS=0
 WITH_GARFIELD=0
-EXTRAS="gseagen, corsika8, crmc, nuwro, nucdeex, prometheus, garfield or all"
+WITH_OSCPROB=0
+WITH_PROB3PP=0
+WITH_NUCRAFT=0
+WITH_GENIE=0
+WITH_MCEQ=0
+WITH_CHROMO=0
+WITH_FENNEL=0
+FENNEL_URL="https://github.com/MeighenBergerS/fennel/archive/refs/tags/v2.1.0.tar.gz"
+EXTRAS="genie, gseagen, corsika8, crmc, nuwro, nucdeex, prometheus, garfield, oscprob, prob3pp, nucraft, oscillation, mceq, chromo, fennel, astro or all"
 
 add_extra() {
     case "$1" in
-        gseagen)    WITH_GSEAGEN=1 ;;
+        genie)      WITH_GENIE=1 ;;
+        gseagen)    WITH_GSEAGEN=1; add_extra genie ;;
         corsika8)   WITH_CORSIKA8=1 ;;
         crmc)       WITH_CRMC=1 ;;
         nuwro)      WITH_NUWRO=1 ;;
         nucdeex)    WITH_NUCDEEX=1 ;;
-        prometheus) WITH_PROMETHEUS=1 ;;
+        prometheus) WITH_PROMETHEUS=1; add_extra fennel ;;
         garfield)   WITH_GARFIELD=1 ;;
-        all)        for e in gseagen corsika8 crmc nuwro nucdeex prometheus garfield; do add_extra "$e"; done ;;
+        oscprob)    WITH_OSCPROB=1 ;;
+        prob3pp)    WITH_PROB3PP=1 ;;
+        nucraft)    WITH_NUCRAFT=1 ;;
+        oscillation) for e in oscprob prob3pp nucraft; do add_extra "$e"; done ;;
+        mceq)       WITH_MCEQ=1 ;;
+        chromo)     WITH_CHROMO=1 ;;
+        fennel)     WITH_FENNEL=1 ;;
+        astro)      for e in mceq chromo fennel; do add_extra "$e"; done ;;
+        all)        for e in genie gseagen corsika8 crmc nuwro nucdeex prometheus garfield oscillation astro; do add_extra "$e"; done ;;
         *) echo "Unknown extra: $1 (choose $EXTRAS)"; exit 1 ;;
     esac
 }
@@ -56,7 +82,7 @@ while [ $# -gt 0 ]; do
         --with)          [ -n "${2:-}" ] || { echo "--with needs a name: $EXTRAS"; exit 1; }
                          add_extra "$2"; shift ;;
         --with=*)        add_extra "${1#--with=}" ;;
-        -h|--help)       sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h|--help)       awk 'NR == 1 { next } /^#/ { sub(/^# ?/, ""); print; next } { exit }' "$0"; exit 0 ;;
         *) echo "Unknown option: $1 (see: bash install.sh --help)"; exit 1 ;;
     esac
     shift
@@ -124,6 +150,17 @@ fi
 
 conda activate "$ENV_NAME"
 
+# Extras installed by an earlier run stay installed and are kept up to date, so a
+# plain 'bash install.sh' after 'git pull' never drops or breaks one of them.
+for e in genie gseagen corsika8 crmc nuwro nucdeex prometheus garfield oscprob prob3pp nucraft; do
+    if [ -d "$CONDA_PREFIX/opt/$e" ]; then add_extra "$e"; fi
+done
+for pair in mceq:MCEq chromo:chromo fennel:fennel; do
+    if python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('${pair#*:}') is None)" 2>/dev/null; then
+        add_extra "${pair%%:*}"
+    fi
+done
+
 # If an environment update changed the ROOT version, the packages compiled against
 # the old ROOT can no longer load it. Remove their build stamps so they are rebuilt.
 ROOT_NOW="$(root-config --version)"
@@ -144,21 +181,37 @@ fi
 mkdir -p "$CONDA_PREFIX/opt"
 echo "$ROOT_NOW" > "$ROOT_FILE"
 
-# --- 3. GENIE ----------------------------------------------------------------
+# --- 3. GENIE (optional) -----------------------------------------------------
 # For gSeaGen's ultra-high-energy neutrinos GENIE needs APFEL: build it first, so
 # GENIE is compiled with it in one go.
 if [ "$WITH_GSEAGEN" = 1 ]; then
     say "Building APFEL (needed by GENIE's high-energy model)"
     bash "$REPO_DIR/scripts/build_apfel.sh" "${REBUILD_ARGS[@]}"
 fi
-say "Building GENIE inside the environment"
-bash "$REPO_DIR/scripts/build_genie.sh" "${REBUILD_ARGS[@]}"
+if [ "$WITH_GENIE" = 1 ]; then
+    say "Building GENIE inside the environment"
+    bash "$REPO_DIR/scripts/build_genie.sh" "${REBUILD_ARGS[@]}"
+fi
 
-# --- 4. Oscillation probability codes ----------------------------------------
-say "Building OscProb"
-bash "$REPO_DIR/scripts/build_oscprob.sh" "${REBUILD_ARGS[@]}"
-say "Building Prob3++"
-bash "$REPO_DIR/scripts/build_prob3pp.sh" "${REBUILD_ARGS[@]}"
+# --- Optional Python packages (PyPI only) ------------------------------------
+PIP_PKGS=()
+if [ "$WITH_MCEQ" = 1 ]; then PIP_PKGS+=("MCEq"); fi
+if [ "$WITH_CHROMO" = 1 ]; then PIP_PKGS+=("chromo"); fi
+if [ "$WITH_FENNEL" = 1 ]; then PIP_PKGS+=("fennel_seed @ $FENNEL_URL"); fi
+if [ "${#PIP_PKGS[@]}" -gt 0 ]; then
+    say "Installing Python packages: ${PIP_PKGS[*]%% @*}"
+    python -m pip install -U "${PIP_PKGS[@]}"
+fi
+
+# --- 4. Oscillation probability codes (optional) -----------------------------
+if [ "$WITH_OSCPROB" = 1 ]; then
+    say "Building OscProb"
+    bash "$REPO_DIR/scripts/build_oscprob.sh" "${REBUILD_ARGS[@]}"
+fi
+if [ "$WITH_PROB3PP" = 1 ]; then
+    say "Building Prob3++"
+    bash "$REPO_DIR/scripts/build_prob3pp.sh" "${REBUILD_ARGS[@]}"
+fi
 
 # Geant4's NuDEX model needs an optional dataset that conda-forge does not ship.
 say "Installing the Geant4 NuDEX dataset"
@@ -201,9 +254,11 @@ fi
 conda deactivate
 conda activate "$ENV_NAME"
 
-# --- 5. NuCraft (only if bundled in extern/nucraft) ---------------------------
-say "Installing NuCraft"
-bash "$REPO_DIR/scripts/install_nucraft.sh"
+# --- 5. NuCraft (optional) ----------------------------------------------------
+if [ "$WITH_NUCRAFT" = 1 ]; then
+    say "Installing NuCraft"
+    bash "$REPO_DIR/scripts/install_nucraft.sh"
+fi
 
 # --- 6. WSL: use ROOT's classic browser --------------------------------------
 # ROOT's web-based TBrowser needs a Linux web browser, which WSL does not have.

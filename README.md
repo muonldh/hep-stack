@@ -3,10 +3,11 @@
 [![install-test](https://github.com/muonldh/hep-stack/actions/workflows/install-test.yml/badge.svg)](https://github.com/muonldh/hep-stack/actions/workflows/install-test.yml)
 [![extras-test](https://github.com/muonldh/hep-stack/actions/workflows/extras-test.yml/badge.svg)](https://github.com/muonldh/hep-stack/actions/workflows/extras-test.yml)
 
-One command to install a complete high energy physics software environment on Linux or Windows (WSL):
-ROOT, Geant4, Pythia 8, LHAPDF, the GENIE neutrino event generator, the OscProb, Prob3++ and NuCraft
-oscillation codes, MCEq, chromo, the Scikit-HEP Python analysis tools and a machine-learning stack,
-plus optional extras such as CORSIKA 8, gSeaGen, NuWro, NucDeEx, CRMC and Prometheus.
+One command to install a general high energy physics software environment on Linux or Windows (WSL):
+ROOT, Geant4, Pythia 8, LHAPDF, the Scikit-HEP Python analysis tools and a machine-learning stack.
+Field-specific codes are optional extras you add with `--with`: the GENIE and NuWro neutrino
+generators, Garfield++, CORSIKA 8, gSeaGen, NucDeEx, CRMC, Prometheus, MCEq, chromo, Fennel, and
+the OscProb, Prob3++ and NuCraft oscillation codes.
 
 No compiling ROOT for an hour, no sudo, no editing paths by hand.
 
@@ -18,20 +19,20 @@ No compiling ROOT for an hour, no sudo, no editing paths by hand.
 | [Geant4](https://geant4.web.cern.ch) + data sets | Detector simulation | conda-forge package |
 | [Pythia 8](https://pythia.org) | Event generation, hadronization | conda-forge package |
 | [LHAPDF 6](https://lhapdf.hepforge.org) | Parton distribution functions | conda-forge package |
-| [GENIE](https://github.com/GENIE-MC/Generator) (R-3_06_02) | Neutrino event generator | compiled by `scripts/build_genie.sh` |
-| [OscProb](https://github.com/joaoabcoelho/OscProb) (v2.4.0) | Oscillation probabilities with PREM, NSI, sterile, decoherence | compiled by `scripts/build_oscprob.sh` |
-| [Prob3++](https://github.com/rogerwendell/Prob3plusplus) (v3r20) | Super-Kamiokande's oscillation probability code | compiled by `scripts/build_prob3pp.sh` |
+| [GENIE](https://github.com/GENIE-MC/Generator) (R-3_06_02), optional | Neutrino event generator | `bash install.sh --with genie`; compiled by `scripts/build_genie.sh` |
+| [OscProb](https://github.com/joaoabcoelho/OscProb) (v2.4.0), optional | Oscillation probabilities with PREM, NSI, sterile, decoherence | `bash install.sh --with oscprob`; compiled by `scripts/build_oscprob.sh` |
+| [Prob3++](https://github.com/rogerwendell/Prob3plusplus) (v3r20), optional | Super-Kamiokande's oscillation probability code | `bash install.sh --with prob3pp`; compiled by `scripts/build_prob3pp.sh` |
 | [CORSIKA 8](https://gitlab.iap.kit.edu/AirShowerPhysics/corsika), optional | Open-source air showers and atmospheric muons | `bash install.sh --with corsika8`; compiled by `scripts/build_corsika8.sh` |
 | [gSeaGen](https://git.km3net.de/opensource/gseagen), optional | GENIE-based generator for neutrino telescopes, up to ultra-high energies | `bash install.sh --with gseagen`; adds [APFEL](https://github.com/scarrazza/apfel) 3.1.1 and builds GENIE with it |
-| [NuCraft](https://arxiv.org/abs/1409.1387) | Atmospheric neutrino oscillation probabilities | bundled in `extern/nucraft`, installed by `scripts/install_nucraft.sh` |
+| [NuCraft](https://arxiv.org/abs/1409.1387), optional | Atmospheric neutrino oscillation probabilities | `bash install.sh --with nucraft`; bundled in `extern/nucraft`, installed by `scripts/install_nucraft.sh` |
 | [CRMC](https://doi.org/10.5281/zenodo.5270381) (2.0.1), optional | Cosmic-ray interaction models (EPOS, QGSJet, Sibyll, ...) | `bash install.sh --with crmc`; compiled by `scripts/build_crmc.sh` |
 | [NuWro](https://github.com/NuWro/nuwro) (25.11), optional | Neutrino event generator | `bash install.sh --with nuwro`; compiled with [ROOTEGPythia6](https://github.com/luketpickering/ROOTEGPythia6) by `scripts/build_nuwro.sh` |
 | [NucDeEx](https://github.com/SeishoAbe/NucDeEx) (v2.2.6), optional | Nuclear de-excitation after neutrino interactions and nucleon decay | `bash install.sh --with nucdeex`; compiled by `scripts/build_nucdeex.sh` |
 | [Prometheus](https://github.com/Harvard-Neutrino/prometheus), optional | Neutrino telescope simulation (includes Hyperion and Olympus) | `bash install.sh --with prometheus`, together with [PROPOSAL](https://github.com/tudo-astroparticlephysics/PROPOSAL) 7.6.2, [LeptonInjector](https://github.com/icecube/LeptonInjector) and [LeptonWeighter](https://github.com/icecube/LeptonWeighter) 1.2.0 |
 | [Garfield++](https://garfieldpp.docs.cern.ch/), optional | Gaseous and semiconductor detector simulation (Heed ionisation, Magboltz electron transport, signals) | `bash install.sh --with garfield`; compiled by `scripts/build_garfield.sh` |
-| [MCEq](https://github.com/afedynitch/MCEq) | Atmospheric lepton fluxes (Matrix Cascade Equations) | PyPI package |
-| [chromo](https://github.com/impy-project/chromo) | EPOS, QGSJet, Sibyll, DPMJET, Pythia and UrQMD from Python | PyPI package |
-| [Fennel](https://github.com/MeighenBergerS/fennel) (2.1.0) | Cherenkov light yields of particles and showers | installed from GitHub with the environment |
+| [MCEq](https://github.com/afedynitch/MCEq), optional | Atmospheric lepton fluxes (Matrix Cascade Equations) | `bash install.sh --with mceq` (PyPI) |
+| [chromo](https://github.com/impy-project/chromo), optional | EPOS, QGSJet, Sibyll, DPMJET, Pythia and UrQMD from Python | `bash install.sh --with chromo` (PyPI) |
+| [Fennel](https://github.com/MeighenBergerS/fennel) (2.1.0), optional | Cherenkov light yields of particles and showers | `bash install.sh --with fennel` (from GitHub); also added by `--with prometheus` |
 | Apache Parquet (pyarrow), yaml-cpp, HDF5 (h5py), HepMC3 | Data formats | conda-forge packages |
 | scikit-learn, XGBoost, PyTorch, torchvision, PyTorch Geometric, JAX | Machine learning (see below) | conda-forge packages |
 | numpy, scipy, pandas, matplotlib, JupyterLab | General scientific Python | conda-forge packages |
@@ -52,7 +53,16 @@ cd hep-stack
 bash install.sh
 ```
 
-The first run takes about 30 to 45 minutes and needs about 15 GB of disk space.
+The first run takes about 15 to 30 minutes and needs about 15 GB of disk space.
+
+To add extras, name them with `--with` (several can be combined, `--with all` installs everything):
+
+```bash
+bash install.sh --with genie --with garfield
+```
+
+Groups: `--with oscillation` (OscProb, Prob3++, NuCraft) and `--with astro` (MCEq, chromo, Fennel).
+Run `bash install.sh --help` for the full list.
 When it finishes, open a new terminal and run:
 
 ```bash
@@ -99,12 +109,14 @@ Expected output:
   [ok]   PyROOT         6.xx/xx
   [ok]   Geant4         11.x.x
   ...
-19 passed, 0 failed
+12 passed, 0 failed
 ```
 
 Optional extras add their own checks: with `--with all` the result is `32 passed, 0 failed`.
 
-If a later `bash install.sh` updates ROOT to a new version, the installer rebuilds GENIE, OscProb and the other packages compiled against ROOT automatically.
+If a later `bash install.sh` updates ROOT to a new version, the installer rebuilds GENIE and the other packages compiled against ROOT automatically.
+
+Extras you installed once stay installed: a later plain `bash install.sh` keeps them up to date without listing them again.
 
 To confirm you can compile your own Geant4 programs, build and run Geant4's example B1:
 
@@ -112,7 +124,11 @@ To confirm you can compile your own Geant4 programs, build and run Geant4's exam
 bash scripts/test_geant4_example.sh
 ```
 
-## Using GENIE
+## GENIE (optional)
+
+```bash
+bash install.sh --with genie
+```
 
 After `conda activate hep`, the `GENIE` variable is set and programs such as `gevgen` and `gevgen_atmo` are on your path.
 Event generation needs precomputed cross-section splines for your chosen tune. These are distributed by the GENIE
@@ -125,9 +141,15 @@ conda activate hep
 GENIE_VERSION=R-3_06_02 GENIE_EXTRA_FLAGS="--enable-t2k" bash scripts/build_genie.sh --rebuild
 ```
 
-## Using OscProb and Prob3++
+## OscProb, Prob3++ and NuCraft (optional)
 
-Both are available from Python (and C++) after `conda activate hep`.
+Neutrino oscillation codes. Install one, or all three with `--with oscillation`:
+
+```bash
+bash install.sh --with oscillation      # or --with oscprob / --with prob3pp / --with nucraft
+```
+
+OscProb and Prob3++ are available from Python (and C++) after `conda activate hep`.
 
 OscProb, through PyROOT:
 
@@ -166,7 +188,7 @@ The codes use different conventions. Check these before comparing results:
 To rebuild a different release: `OSCPROB_VERSION=v2.3.0 bash scripts/build_oscprob.sh --rebuild`
 (the same works with `PROB3PP_VERSION` and `scripts/build_prob3pp.sh`).
 
-## Using NuCraft
+### NuCraft
 
 After `conda activate hep`, NuCraft can be imported from any folder:
 
@@ -219,7 +241,7 @@ To build a specific release instead of the latest development version:
 ## gSeaGen (optional)
 
 gSeaGen is KM3NeT's event generator for neutrino telescopes. It is a GENIE application:
-it links the GENIE built here and uses GENIE for every interaction. For astrophysical
+it links the GENIE built here (`--with gseagen` installs GENIE too) and uses GENIE for every interaction. For astrophysical
 neutrinos above about 100 TeV it uses GENIE's high-energy model (HEDIS, tune
 `GHE19_00b_00_000`), which needs NLO structure functions from APFEL and the
 `HERAPDF15NLO_EIG` PDF set. `--with gseagen` sets all of this up:
@@ -255,7 +277,7 @@ conda-forge can install a CUDA build instead (`conda install -n hep "pytorch=*=c
 
 Both give access to the hadronic interaction models used in air-shower physics.
 
-- **chromo** is installed by default: `import chromo` in Python, or the `chromo` command.
+- **chromo** (`bash install.sh --with chromo`): `import chromo` in Python, or the `chromo` command.
 - **CRMC** is the classic C++/Fortran package (`bash install.sh --with crmc`). After
   `conda activate hep`, run `crmc --help`. Example, 10 proton-proton collisions at
   13 TeV with EPOS-LHC written as HepMC:
@@ -367,7 +389,7 @@ Miniforge itself lives in `~/miniforge3`. To remove it as well, delete that fold
 
 1. **Conda.** `install.sh` finds an existing conda installation or installs Miniforge.
 2. **Environment.** It creates the `hep` environment from `environment.yml`, using only the community-maintained [conda-forge](https://conda-forge.org) channel.
-3. **GENIE, OscProb, Prob3++ and NuCraft.** These are not available as conda packages (the optional extras are built the same way, by their own scripts in `scripts/`). `scripts/build_genie.sh`, `scripts/build_oscprob.sh` and `scripts/build_prob3pp.sh` compile them inside the environment with the environment's own compilers and libraries, then register conda activation hooks, so `conda activate hep` sets `GENIE`, `OSCPROB_DIR`, `PROB3PP`, `PATH`, `LD_LIBRARY_PATH` and `ROOT_INCLUDE_PATH` for you. `scripts/install_nucraft.sh` copies the bundled NuCraft into the environment and applies its NumPy 2 fix.
+3. **Extras.** Most are not available as conda packages. Each has its own script in `scripts/` that compiles it inside the environment with the environment's own compilers and libraries, then register conda activation hooks, so `conda activate hep` sets `GENIE`, `PATH`, `LD_LIBRARY_PATH`, `ROOT_INCLUDE_PATH` and each package's own variables for you.
 4. **Test.** `scripts/check_install.sh` verifies each component.
 
 The full installation is tested automatically on a clean Ubuntu 24.04 machine by
@@ -386,7 +408,7 @@ The optional extras are tested separately by [extras-test](.github/workflows/ext
 |---|---|
 | `conda: command not found` | Open a new terminal. The installer only updates `~/.bashrc`, which new terminals read. |
 | Installer stops during "Creating environment" | Usually a network drop. Run `bash install.sh` again; it continues from where it stopped. |
-| Build is killed or the computer freezes while compiling GENIE | Not enough RAM for parallel builds. Run `JOBS=2 bash install.sh`. |
+| Build is killed or the computer freezes while compiling (e.g. GENIE) | Not enough RAM for parallel builds. Run `JOBS=2 bash install.sh`. |
 | `xdg-open: not found` when opening a TBrowser | Run `echo "Browser.Name: TRootBrowser" >> ~/.rootrc` (the installer does this automatically on WSL). |
 | Geant4 or ROOT windows do not open on WSL | Graphics need Windows 11 (WSLg). Batch jobs work without it. |
 

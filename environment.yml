@@ -17,11 +17,12 @@ dependencies:
   - pythia8
   - lhapdf
 
-  # Needed to compile GENIE
+  # Compilers and build tools (GENIE and the other compiled extras)
   - c-compiler
   - cxx-compiler
   - fortran-compiler     # for CORSIKA 8, APFEL, CRMC and NuWro (Pythia 6)
   - wget
+  - curl                 # downloads in the build scripts (no system curl needed)
   - make
   - pkg-config           # LeptonWeighter (Prometheus); not on every system
   - perl
@@ -86,12 +87,8 @@ dependencies:
   - vector
   - particle
 
-  # Python packages only available on PyPI
+  # MCEq, chromo and Fennel (PyPI only) are optional: bash install.sh --with astro
   - pip
-  - pip:
-      - MCEq                # atmospheric lepton fluxes (Matrix Cascade Equations)
-      - chromo              # EPOS, QGSJet, Sibyll, DPMJET, Pythia and UrQMD from Python
-      - fennel_seed @ https://github.com/MeighenBergerS/fennel/archive/refs/tags/v2.1.0.tar.gz   # light yields (Prometheus uses v2.1.0)
 
 # Environment variables set on 'conda activate hep'.
 variables:
