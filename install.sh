@@ -15,6 +15,7 @@
 #   bash install.sh --with nucdeex     NucDeEx nuclear de-excitation (with NuWro interface if
 #                                      NuWro is installed)
 #   bash install.sh --with prometheus  Prometheus, PROPOSAL, LeptonInjector, LeptonWeighter
+#   bash install.sh --with garfield    Garfield++ gaseous/semiconductor detector simulation
 
 set -eo pipefail
 
@@ -30,7 +31,8 @@ WITH_CRMC=0
 WITH_NUWRO=0
 WITH_NUCDEEX=0
 WITH_PROMETHEUS=0
-EXTRAS="gseagen, corsika8, crmc, nuwro, nucdeex, prometheus or all"
+WITH_GARFIELD=0
+EXTRAS="gseagen, corsika8, crmc, nuwro, nucdeex, prometheus, garfield or all"
 
 add_extra() {
     case "$1" in
@@ -40,7 +42,8 @@ add_extra() {
         nuwro)      WITH_NUWRO=1 ;;
         nucdeex)    WITH_NUCDEEX=1 ;;
         prometheus) WITH_PROMETHEUS=1 ;;
-        all)        for e in gseagen corsika8 crmc nuwro nucdeex prometheus; do add_extra "$e"; done ;;
+        garfield)   WITH_GARFIELD=1 ;;
+        all)        for e in gseagen corsika8 crmc nuwro nucdeex prometheus garfield; do add_extra "$e"; done ;;
         *) echo "Unknown extra: $1 (choose $EXTRAS)"; exit 1 ;;
     esac
 }
@@ -72,7 +75,11 @@ confirm() {
 [ "$EUID" -ne 0 ] || fail "Run this as your normal user, not with sudo."
 [ "$(uname -s)" = "Linux" ] || fail "This installer supports Linux and WSL only."
 [ "$(uname -m)" = "x86_64" ] || fail "GENIE's build system supports x86_64 only (found $(uname -m))."
-command -v curl >/dev/null || fail "curl is missing. Install it with: sudo apt install curl"
+# Miniforge is downloaded with curl, or wget if curl is missing (no sudo needed).
+# After that, the environment provides its own curl for the build scripts.
+command -v curl >/dev/null || command -v wget >/dev/null \
+    || fail "Neither curl nor wget is installed. Ask an administrator for: sudo apt install curl"
+download() { if command -v curl >/dev/null; then curl -fsSL -o "$1" "$2"; else wget -q -O "$1" "$2"; fi; }
 
 FREE_GB=$(df --output=avail -BG "$HOME" | tail -1 | tr -dc '0-9')
 if [ "$FREE_GB" -lt 15 ]; then
@@ -93,7 +100,7 @@ elif [ -x "$MINIFORGE_DIR/bin/conda" ]; then
 else
     say "Installing Miniforge (conda) into $MINIFORGE_DIR"
     INSTALLER="$(mktemp --suffix=.sh)"
-    curl -fsSL -o "$INSTALLER" \
+    download "$INSTALLER" \
         "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh"
     bash "$INSTALLER" -b -p "$MINIFORGE_DIR"
     rm -f "$INSTALLER"
@@ -130,7 +137,7 @@ elif [ -x "$CONDA_PREFIX/opt/genie/bin/gevgen" ] \
 fi
 if [ "$ROOT_CHANGED" = 1 ]; then
     say "ROOT is now $ROOT_NOW: rebuilding the packages compiled against the old version"
-    for pkg in genie oscprob genie-reweight gseagen nuwro nucdeex; do
+    for pkg in genie oscprob genie-reweight gseagen nuwro nucdeex garfield; do
         rm -f "$CONDA_PREFIX/opt/$pkg"/.built*
     done
 fi
@@ -184,6 +191,10 @@ fi
 if [ "$WITH_PROMETHEUS" = 1 ]; then
     say "Building Prometheus with PROPOSAL, LeptonInjector and LeptonWeighter"
     bash "$REPO_DIR/scripts/build_prometheus.sh" "${REBUILD_ARGS[@]}"
+fi
+if [ "$WITH_GARFIELD" = 1 ]; then
+    say "Building Garfield++"
+    bash "$REPO_DIR/scripts/build_garfield.sh" "${REBUILD_ARGS[@]}"
 fi
 
 # Re-activate so the activation hooks written by the build scripts take effect.

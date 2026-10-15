@@ -28,6 +28,7 @@ No compiling ROOT for an hour, no sudo, no editing paths by hand.
 | [NuWro](https://github.com/NuWro/nuwro) (25.11), optional | Neutrino event generator | `bash install.sh --with nuwro`; compiled with [ROOTEGPythia6](https://github.com/luketpickering/ROOTEGPythia6) by `scripts/build_nuwro.sh` |
 | [NucDeEx](https://github.com/SeishoAbe/NucDeEx) (v2.2.6), optional | Nuclear de-excitation after neutrino interactions and nucleon decay | `bash install.sh --with nucdeex`; compiled by `scripts/build_nucdeex.sh` |
 | [Prometheus](https://github.com/Harvard-Neutrino/prometheus), optional | Neutrino telescope simulation (includes Hyperion and Olympus) | `bash install.sh --with prometheus`, together with [PROPOSAL](https://github.com/tudo-astroparticlephysics/PROPOSAL) 7.6.2, [LeptonInjector](https://github.com/icecube/LeptonInjector) and [LeptonWeighter](https://github.com/icecube/LeptonWeighter) 1.2.0 |
+| [Garfield++](https://garfieldpp.docs.cern.ch/), optional | Gaseous and semiconductor detector simulation (Heed ionisation, Magboltz electron transport, signals) | `bash install.sh --with garfield`; compiled by `scripts/build_garfield.sh` |
 | [MCEq](https://github.com/afedynitch/MCEq) | Atmospheric lepton fluxes (Matrix Cascade Equations) | PyPI package |
 | [chromo](https://github.com/impy-project/chromo) | EPOS, QGSJet, Sibyll, DPMJET, Pythia and UrQMD from Python | PyPI package |
 | [Fennel](https://github.com/MeighenBergerS/fennel) (2.1.0) | Cherenkov light yields of particles and showers | installed from GitHub with the environment |
@@ -101,7 +102,7 @@ Expected output:
 19 passed, 0 failed
 ```
 
-Optional extras add their own checks: with `--with all` the result is `31 passed, 0 failed`.
+Optional extras add their own checks: with `--with all` the result is `32 passed, 0 failed`.
 
 If a later `bash install.sh` updates ROOT to a new version, the installer rebuilds GENIE, OscProb and the other packages compiled against ROOT automatically.
 
@@ -296,6 +297,34 @@ and Fennel. Prometheus' own photon-propagation models, Hyperion and Olympus, com
 Photon propagation with IceCube's `ppc` code is optional in Prometheus and is not installed;
 see the [Prometheus documentation](https://github.com/Harvard-Neutrino/prometheus) if you need it.
 
+## Garfield++ (optional)
+
+```bash
+cd ~/hep-stack
+bash install.sh --with garfield
+```
+
+Builds Garfield++ from CERN's GitLab (master branch, as its developers recommend; the
+commit used is stored in `$GARFIELD_INSTALL/.built`). It needs only ROOT, GSL and the
+compilers, which are already in the environment. After `conda activate hep`,
+`GARFIELD_INSTALL`, `HEED_DATABASE` and `CMAKE_PREFIX_PATH` are set as Garfield's own
+`setupGarfield.sh` would set them.
+
+From Python:
+
+```python
+import ROOT
+ROOT.gSystem.Load("libGarfield")
+gas = ROOT.Garfield.MediumMagboltz("ar", 90., "co2", 10.)
+```
+
+The examples are in `$GARFIELD_HOME/Examples`. To build one:
+
+```bash
+cp -r $GARFIELD_HOME/Examples/Gem ~/ && cd ~/Gem
+mkdir build && cd build && cmake .. && make && ./gem
+```
+
 ## How the generators fit together
 
 | Step | Tool | Connection |
@@ -305,6 +334,7 @@ see the [Prometheus documentation](https://github.com/Harvard-Neutrino/prometheu
 | Neutrino interactions, GeV scale | GENIE (`gevgen`, `gevgen_atmo`), NuWro | atmospheric fluxes as input tables (MCEq can produce them) |
 | Nuclear de-excitation | NucDeEx | added to GENIE or NuWro output files |
 | Neutrino interactions in a telescope, up to EeV | gSeaGen, Prometheus (LeptonInjector) | gSeaGen is built on the same GENIE |
+| Charge drift and signals in gas or silicon detectors | Garfield++ | stand-alone; its Geant4 interface example shows how to combine it with Geant4 |
 | Lepton propagation and light in water or ice | PROPOSAL, Fennel, Hyperion | used inside Prometheus; PROPOSAL also on its own |
 | Oscillation weights | OscProb, Prob3++, NuCraft | applied to GENIE or gSeaGen events afterwards |
 
@@ -363,5 +393,5 @@ The optional extras are tested separately by [extras-test](.github/workflows/ext
 ## License
 
 The scripts in this repository are released under the [MIT License](LICENSE).
-ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++, CORSIKA 8, gSeaGen, APFEL, CRMC, chromo, MCEq, NuWro, NucDeEx, Prometheus, PROPOSAL, LeptonInjector, LeptonWeighter, Fennel and NuCraft are separate projects under their own licenses.
+ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++, CORSIKA 8, gSeaGen, APFEL, CRMC, chromo, MCEq, NuWro, NucDeEx, Prometheus, PROPOSAL, LeptonInjector, LeptonWeighter, Fennel, Garfield++ and NuCraft are separate projects under their own licenses.
 If you use them in published work, cite them as their authors request.
