@@ -223,6 +223,8 @@ if [ "$WITH_GSEAGEN" = 1 ]; then
     bash "$REPO_DIR/scripts/build_genie_reweight.sh" "${REBUILD_ARGS[@]}"
     say "Building gSeaGen"
     bash "$REPO_DIR/scripts/build_gseagen.sh" "${REBUILD_ARGS[@]}"
+    say "Preparing GENIE's ultra-high-energy data (PDF sets, photon and HEDIS tables)"
+    bash "$REPO_DIR/scripts/prepare_genie_uhe.sh" "${REBUILD_ARGS[@]}"
 fi
 if [ "$WITH_CORSIKA8" = 1 ]; then
     say "Building CORSIKA 8 (the first build takes one to two hours)"

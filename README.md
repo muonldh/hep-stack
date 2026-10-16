@@ -112,7 +112,8 @@ Expected output:
 12 passed, 0 failed
 ```
 
-Optional extras add their own checks: with `--with all` the result is `32 passed, 0 failed`.
+Optional extras add their own checks: with `--with all` the result is `36 passed, 0 failed`. With CORSIKA 8 installed, the check
+runs a small air shower and configures its examples, which adds about a minute.
 
 If a later `bash install.sh` updates ROOT to a new version, the installer rebuilds GENIE and the other packages compiled against ROOT automatically.
 
@@ -235,6 +236,28 @@ cmake --build ~/c8-examples -j4
 ls ~/c8-examples/bin
 ```
 
+Your own CORSIKA 8 projects find everything the same way: `find_package(corsika)` in your
+`CMakeLists.txt` is enough. The installer adds a small CMake file
+(`$CORSIKA8_DIR/share/hep-stack/c8_shim.cmake`, loaded automatically) that points CMake at
+the dependencies CORSIKA 8 was built with and avoids a clash with the environment's Boost.
+
+The ready-made air-shower program is `c8_air_shower`. One 1 TeV proton shower down to sea level:
+
+```bash
+$CORSIKA8_DIR/bin/c8_air_shower -Z 1 -A 1 -E 1000 -z 0 --observation-level 0 \
+    --emcut 1 -s 1 -N 1 -f test1
+```
+
+The particles at ground level are in `test1/particles` (Parquet; read with `pandas.read_parquet`).
+
+CORSIKA 8 uses its own copy of Pythia 8, which is a different version from the environment's.
+The programs in `$CORSIKA8_DIR/bin` take care of this. For programs you build yourself, start
+them with `env -u PYTHIA8DATA ./your_program`, or they stop with a Pythia version error.
+
+**Known issue (CORSIKA 8 itself, commit `b2d861e`):** `--energy_range` samples energies
+outside the requested range. Give a fixed energy with `-E` for each run instead, and draw the
+energies from your spectrum yourself.
+
 To build a specific release instead of the latest development version:
 `CORSIKA8_VERSION=<tag> bash scripts/build_corsika8.sh --rebuild` (the build log lists recent tags).
 
@@ -253,12 +276,31 @@ bash install.sh --with gseagen
 
 It builds APFEL, rebuilds GENIE once with APFEL enabled (same version and tunes as before,
 so existing GENIE results are unaffected), downloads `HERAPDF15NLO_EIG`, builds GENIE
-ReWeight (R-1_04_02, which gSeaGen requires), and then builds gSeaGen.
+ReWeight (R-1_04_02, which gSeaGen requires), and then builds gSeaGen. Finally it prepares
+the data `GHE19_00b_00_000` needs before any spline can be made
+(`scripts/prepare_genie_uhe.sh`): the NNPDF3.1 photon PDF sets, the photon
+structure-function tables (`gmkphotonsf`) and the HEDIS structure-function tables
+(`gmkhedissf`). This adds 10 to 60 minutes, so the gSeaGen install takes one to two hours.
 After `conda activate hep`, `gSeaNuEvGen -h` lists all options.
 
-Like any GENIE application, gSeaGen needs cross-section splines for the tune you use.
-For ultra-high energies that is `GHE19_00b_00_000`; the first run with it also computes
-the structure-function tables with APFEL, which takes a while once.
+Like any GENIE application, gSeaGen needs cross-section splines (`gmkspl`) for the tune you use.
+Before you start a long `gmkspl` run:
+
+- **Test the full process list first** on a tiny grid with all flavours, and check that the
+  output file appears. A GHE19 spline run can take days, and gmkspl writes its file only at
+  the very end:
+  ```bash
+  gmkspl -p 12,-12,14,-14,16,-16 -t 1000010010 -n 5 -e 1e3 \
+      --tune GHE19_00b_00_000 --event-generator-list Default -o test.xml
+  ```
+- **Write gSeaGen flux formulas without commas**, e.g. `1E-8/(x*x)` rather than `pow(x,-2)`.
+  gSeaGen splits the flux option at commas, so with `pow(x,-2)` it generated only
+  flavours 12 and -12.
+- **Keep Windows from sleeping** during long WSL jobs (Settings, System, Power). WSL stops
+  all jobs when the computer sleeps.
+
+For the newer tune `GHE19_00d_00_000`, also install its PDF set:
+`WITH_GHE19_00D=1 bash scripts/prepare_genie_uhe.sh --rebuild`.
 
 ## Machine learning
 

@@ -50,6 +50,7 @@ dependencies:
   - libboost-python-devel  # LeptonInjector Python module (Prometheus)
   - tbb-devel            # gSeaGen (ROOT's link flags include -ltbb)
   - hepmc3               # CRMC event output
+  - bzip2                # CORSIKA 8 projects (BZip2::BZip2)
   - photospline          # LeptonInjector, LeptonWeighter (Prometheus)
   - libopenblas          # photospline links libopenblas.so.0 but does not pull it in
   - pybind11             # LeptonInjector, LeptonWeighter (Prometheus)
