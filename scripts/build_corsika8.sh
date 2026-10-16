@@ -32,7 +32,61 @@ BUILD="$P/opt/corsika8-build"  # build tree (kept: the installed CMake files may
 DIR="$P/opt/corsika8"          # installed framework
 STAMP="$DIR/.built"
 
+# Fixes applied after the build (and to existing installs, so a plain
+# 'bash install.sh' upgrades older CORSIKA 8 installations too):
+#  1. CORSIKA 8 carries its own Pythia 8, whose data files must match it. The env's
+#     PYTHIA8DATA points at conda's Pythia 8 (a different version), which makes the
+#     shipped programs abort. Each program in bin/ becomes a small wrapper that
+#     unsets PYTHIA8DATA before starting the real program (kept in libexec/).
+#  2. Projects that use find_package(corsika), such as CORSIKA 8's own examples,
+#     cannot see the dependencies Conan built for it. c8_shim.cmake, loaded at the
+#     top of corsikaConfig.cmake, points CMake at them (except Conan's Boost 1.85,
+#     which lacks 'filesystem' and clashes with conda's Boost) and defines the Boost
+#     and BZip2 targets they expect.
+c8_postinstall() {
+    local dep="$DIR/lib/cmake/dependencies" shim="$DIR/share/hep-stack/c8_shim.cmake"
+    local exe name f n cfg
+
+    mkdir -p "$DIR/libexec"
+    for exe in "$DIR"/bin/*; do
+        [ -f "$exe" ] && [ -x "$exe" ] || continue
+        [ "$(head -c 4 "$exe" | tail -c 3)" = "ELF" ] || continue   # already a wrapper
+        name="$(basename "$exe")"
+        mv "$exe" "$DIR/libexec/$name"
+        printf '#!/bin/bash\n# hep-stack wrapper: CORSIKA 8 uses its own Pythia 8, not conda'"'"'s (see PYTHIA8DATA).\nunset PYTHIA8DATA\nexec "%s" "$@"\n' \
+            "$DIR/libexec/$name" > "$exe"
+        chmod +x "$exe"
+    done
+
+    mkdir -p "$(dirname "$shim")"
+    {
+        echo "# Written by hep-stack (scripts/build_corsika8.sh). Loaded by corsikaConfig.cmake."
+        for f in "$dep"/*Config.cmake "$dep"/*-config.cmake; do
+            [ -e "$f" ] || continue
+            n="$(basename "$f")"; n="${n%Config.cmake}"; n="${n%-config.cmake}"
+            case "$n" in Boost*|boost*) continue ;; esac
+            printf 'if(NOT DEFINED %s_DIR)\n  set(%s_DIR "%s")\nendif()\n' "$n" "$n" "$dep"
+        done
+        # shellcheck disable=SC2016
+        printf '%s\n' \
+            'find_package(Boost REQUIRED COMPONENTS serialization)' \
+            'find_package(BZip2 REQUIRED)' \
+            'foreach(_c8_target boost::boost Boost::math)' \
+            '  if(NOT TARGET ${_c8_target})' \
+            '    add_library(${_c8_target} INTERFACE IMPORTED)' \
+            '    target_link_libraries(${_c8_target} INTERFACE Boost::headers)' \
+            '  endif()' \
+            'endforeach()'
+    } > "$shim"
+
+    find "$BUILD" "$DIR" -name corsikaConfig.cmake 2>/dev/null | while read -r cfg; do
+        grep -q 'c8_shim.cmake' "$cfg" || sed -i "1i include(\"$shim\")" "$cfg"
+    done
+    echo "CORSIKA 8 fixes applied (Pythia wrappers, $shim)."
+}
+
 if [ -f "$STAMP" ] && [ "$REBUILD" = 0 ]; then
+    c8_postinstall
     echo "CORSIKA 8 already built in $DIR ($(cat "$STAMP")). Use --rebuild to redo it."
     exit 0
 fi
@@ -154,5 +208,6 @@ fi
 unset CORSIKA8_DIR corsika_DIR CORSIKA_DATA CONAN_HOME
 EOF
 
+c8_postinstall
 echo "commit $COMMIT, built $(date +%F)" > "$STAMP"
 echo "CORSIKA 8 ($COMMIT) installed in $DIR"

@@ -21,6 +21,30 @@ has_module() {
     python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('$1') is None)" 2>/dev/null
 }
 
+# CORSIKA 8: run a small proton shower (100 GeV) and check that particles reach the ground.
+corsika8_shower_ok() {
+    local tmp; tmp="$(mktemp -d)"
+    if ! (cd "$tmp" && timeout 900 "$CORSIKA8_DIR/bin/c8_air_shower" -Z 1 -A 1 -E 100 -z 0 \
+            --observation-level 0 --emcut 1 -s 1 -N 1 -f shower) > "$tmp/log" 2>&1; then
+        tail -n 1 "$tmp/log"; rm -rf "$tmp"; return 1
+    fi
+    if [ -e "$tmp/shower/particles" ]; then
+        echo "100 GeV proton shower ok"; rm -rf "$tmp"
+    else
+        echo "shower ran but wrote no particles"; rm -rf "$tmp"; return 1
+    fi
+}
+
+# CORSIKA 8: check that a project using find_package(corsika) configures (its examples).
+corsika8_cmake_ok() {
+    local tmp; tmp="$(mktemp -d)"
+    if cmake -S "$CONDA_PREFIX/opt/corsika8-src/examples" -B "$tmp/build" > "$tmp/log" 2>&1; then
+        echo "examples configure"; rm -rf "$tmp"
+    else
+        grep -m1 'CMake Error' "$tmp/log" || tail -n 1 "$tmp/log"; rm -rf "$tmp"; return 1
+    fi
+}
+
 genie_ok() {
     [ -n "${GENIE:-}" ] || { echo "GENIE variable not set"; return 1; }
     [ -x "$GENIE/bin/gevgen" ] || { echo "gevgen not found"; return 1; }
@@ -64,12 +88,17 @@ if has_module fennel; then
 fi
 if [ -d "$CONDA_PREFIX/opt/corsika8" ]; then
     # shellcheck disable=SC2016
-    check "CORSIKA 8"  bash -c 'cat "$CONDA_PREFIX/opt/corsika8/.built" && test -d "$CORSIKA_DATA"'
+    check "CORSIKA 8"  corsika8_shower_ok
+    check "C8 projects" corsika8_cmake_ok
 fi
 if [ -d "$CONDA_PREFIX/opt/apfel" ]; then
     # shellcheck disable=SC2016
     check "GENIE+APFEL" bash -c 'ldd "$GENIE/bin/gevgen" | grep -q libAPFEL && echo "HEDIS can use NLO structure functions"'
     check "HERAPDF15"  test -d "$(lhapdf-config --datadir)/HERAPDF15NLO_EIG"
+    check "NNPDF31 photon" test -d "$(lhapdf-config --datadir)/NNPDF31_nnlo_as_0118_luxqed"
+    # shellcheck disable=SC2016
+    check "Photon SF" bash -c '[ "$(ls "$GENIE"/data/evgen/photon-sf/*.dat 2>/dev/null | wc -l)" -eq 12 ] && echo "12 tables"'
+    check "HEDIS SF"  test -d "$GENIE/data/evgen/hedis-sf/GHE19_00b_00_000"
 fi
 if [ -d "$CONDA_PREFIX/opt/genie-reweight" ]; then
     # shellcheck disable=SC2016
