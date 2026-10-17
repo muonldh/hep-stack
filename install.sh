@@ -3,6 +3,7 @@
 #
 #   bash install.sh                  install the core stack (see README for the list)
 #   bash install.sh --auto-activate  also activate the environment in every new terminal
+#                                    (kept on later runs; --no-auto-activate turns it off)
 #   bash install.sh --rebuild        force fresh builds of the chosen extras
 #   bash install.sh --yes            never ask questions (for automated runs)
 #
@@ -31,7 +32,7 @@ set -eo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_NAME="${ENV_NAME:-hep}"
 MINIFORGE_DIR="${MINIFORGE_DIR:-$HOME/miniforge3}"
-AUTO_ACTIVATE=0
+AUTO_ACTIVATE=
 ASSUME_YES=0
 REBUILD_ARGS=()
 WITH_CORSIKA8=0
@@ -77,6 +78,7 @@ add_extra() {
 while [ $# -gt 0 ]; do
     case "$1" in
         --auto-activate) AUTO_ACTIVATE=1 ;;
+        --no-auto-activate) AUTO_ACTIVATE=0 ;;
         --rebuild|--rebuild-genie) REBUILD_ARGS+=(--rebuild) ;;
         --yes|-y)        ASSUME_YES=1 ;;
         --with)          [ -n "${2:-}" ] || { echo "--with needs a name: $EXTRAS"; exit 1; }
@@ -275,6 +277,10 @@ fi
 # --- 7. Optional auto-activation ----------------------------------------------
 BEGIN="# >>> hep-stack auto-activate >>>"
 END="# <<< hep-stack auto-activate <<<"
+# Without --auto-activate or --no-auto-activate, keep whatever an earlier run set up.
+if [ -z "$AUTO_ACTIVATE" ]; then
+    if grep -qF "$BEGIN" "$HOME/.bashrc" 2>/dev/null; then AUTO_ACTIVATE=1; else AUTO_ACTIVATE=0; fi
+fi
 sed -i "/$BEGIN/,/$END/d" "$HOME/.bashrc"
 if [ "$AUTO_ACTIVATE" = 1 ]; then
     printf '%s\nconda activate %s\n%s\n' "$BEGIN" "$ENV_NAME" "$END" >> "$HOME/.bashrc"
