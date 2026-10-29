@@ -26,6 +26,7 @@
 #   bash install.sh --with chromo      chromo: EPOS, QGSJet, Sibyll, ... from Python
 #   bash install.sh --with fennel      Fennel Cherenkov light yields (Python)
 #   bash install.sh --with astro       all three Python packages above
+#   bash install.sh --with devsim      DEVSIM semiconductor device (TCAD) simulator (Python)
 
 set -eo pipefail
 
@@ -49,8 +50,10 @@ WITH_GENIE=0
 WITH_MCEQ=0
 WITH_CHROMO=0
 WITH_FENNEL=0
+WITH_DEVSIM=0
+DEVSIM_VERSION="${DEVSIM_VERSION:-2.11.2}"
 FENNEL_URL="https://github.com/MeighenBergerS/fennel/archive/refs/tags/v2.1.0.tar.gz"
-EXTRAS="genie, gseagen, corsika8, crmc, nuwro, nucdeex, prometheus, garfield, oscprob, prob3pp, nucraft, oscillation, mceq, chromo, fennel, astro or all"
+EXTRAS="genie, gseagen, corsika8, crmc, nuwro, nucdeex, prometheus, garfield, oscprob, prob3pp, nucraft, oscillation, mceq, chromo, fennel, astro, devsim or all"
 
 add_extra() {
     case "$1" in
@@ -69,8 +72,9 @@ add_extra() {
         mceq)       WITH_MCEQ=1 ;;
         chromo)     WITH_CHROMO=1 ;;
         fennel)     WITH_FENNEL=1 ;;
+        devsim)     WITH_DEVSIM=1 ;;
         astro)      for e in mceq chromo fennel; do add_extra "$e"; done ;;
-        all)        for e in genie gseagen corsika8 crmc nuwro nucdeex prometheus garfield oscillation astro; do add_extra "$e"; done ;;
+        all)        for e in genie gseagen corsika8 crmc nuwro nucdeex prometheus garfield oscillation astro devsim; do add_extra "$e"; done ;;
         *) echo "Unknown extra: $1 (choose $EXTRAS)"; exit 1 ;;
     esac
 }
@@ -157,7 +161,7 @@ conda activate "$ENV_NAME"
 for e in genie gseagen corsika8 crmc nuwro nucdeex prometheus garfield oscprob prob3pp nucraft; do
     if [ -d "$CONDA_PREFIX/opt/$e" ]; then add_extra "$e"; fi
 done
-for pair in mceq:MCEq chromo:chromo fennel:fennel; do
+for pair in mceq:MCEq chromo:chromo fennel:fennel devsim:devsim; do
     if python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('${pair#*:}') is None)" 2>/dev/null; then
         add_extra "${pair%%:*}"
     fi
@@ -200,6 +204,7 @@ PIP_PKGS=()
 if [ "$WITH_MCEQ" = 1 ]; then PIP_PKGS+=("MCEq"); fi
 if [ "$WITH_CHROMO" = 1 ]; then PIP_PKGS+=("chromo"); fi
 if [ "$WITH_FENNEL" = 1 ]; then PIP_PKGS+=("fennel_seed @ $FENNEL_URL"); fi
+if [ "$WITH_DEVSIM" = 1 ]; then PIP_PKGS+=("devsim==$DEVSIM_VERSION"); fi
 if [ "${#PIP_PKGS[@]}" -gt 0 ]; then
     say "Installing Python packages: ${PIP_PKGS[*]%% @*}"
     python -m pip install -U "${PIP_PKGS[@]}"

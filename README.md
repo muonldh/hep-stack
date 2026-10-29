@@ -33,6 +33,7 @@ No compiling ROOT for an hour, no sudo, no editing paths by hand.
 | [MCEq](https://github.com/afedynitch/MCEq), optional | Atmospheric lepton fluxes (Matrix Cascade Equations) | `bash install.sh --with mceq` (PyPI) |
 | [chromo](https://github.com/impy-project/chromo), optional | EPOS, QGSJet, Sibyll, DPMJET, Pythia and UrQMD from Python | `bash install.sh --with chromo` (PyPI) |
 | [Fennel](https://github.com/MeighenBergerS/fennel) (2.1.0), optional | Cherenkov light yields of particles and showers | `bash install.sh --with fennel` (from GitHub); also added by `--with prometheus` |
+| [DEVSIM](https://devsim.org) (2.11.2), optional | Semiconductor device (TCAD) simulation: potentials, fields and currents in silicon sensors | `bash install.sh --with devsim` (PyPI) |
 | Apache Parquet (pyarrow), yaml-cpp, HDF5 (h5py), HepMC3 | Data formats | conda-forge packages |
 | scikit-learn, XGBoost, PyTorch, torchvision, PyTorch Geometric, JAX | Machine learning (see below) | conda-forge packages |
 | numpy, scipy, pandas, matplotlib, JupyterLab | General scientific Python | conda-forge packages |
@@ -112,7 +113,7 @@ Expected output:
 12 passed, 0 failed
 ```
 
-Optional extras add their own checks: with `--with all` the result is `36 passed, 0 failed`. With CORSIKA 8 installed, the check
+Optional extras add their own checks: with `--with all` the result is `37 passed, 0 failed`. With CORSIKA 8 installed, the check
 runs a small air shower and configures its examples, which adds about a minute.
 
 If a later `bash install.sh` updates ROOT to a new version, the installer rebuilds GENIE and the other packages compiled against ROOT automatically.
@@ -302,6 +303,27 @@ Before you start a long `gmkspl` run:
 For the newer tune `GHE19_00d_00_000`, also install its PDF set:
 `WITH_GHE19_00D=1 bash scripts/prepare_genie_uhe.sh --rebuild`.
 
+## DEVSIM (optional)
+
+DEVSIM is a TCAD simulator for semiconductor devices: it solves the Poisson and
+drift-diffusion equations on 1D, 2D and 3D meshes, for example to get the electric field,
+depletion and capacitance of a silicon sensor. It is a Python package:
+
+```bash
+bash install.sh --with devsim
+```
+
+After `conda activate hep`, `import devsim` works. The examples and tests from the DEVSIM
+release are installed in `$CONDA_PREFIX/devsim_data`:
+
+```bash
+cp -r $CONDA_PREFIX/devsim_data/examples ~/devsim-examples
+cd ~/devsim-examples/capacitance && python cap1d.py
+```
+
+It uses the Intel MKL (installed with the environment) for its linear solvers. Documentation:
+[devsim.net](https://devsim.net), questions: [forum.devsim.org](https://forum.devsim.org).
+
 ## Machine learning
 
 | Model | Package | Example |
@@ -457,5 +479,5 @@ The optional extras are tested separately by [extras-test](.github/workflows/ext
 ## License
 
 The scripts in this repository are released under the [MIT License](LICENSE).
-ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++, CORSIKA 8, gSeaGen, APFEL, CRMC, chromo, MCEq, NuWro, NucDeEx, Prometheus, PROPOSAL, LeptonInjector, LeptonWeighter, Fennel, Garfield++ and NuCraft are separate projects under their own licenses.
+ROOT, Geant4, Pythia, LHAPDF, GENIE, OscProb, Prob3++, CORSIKA 8, gSeaGen, APFEL, CRMC, chromo, MCEq, NuWro, NucDeEx, Prometheus, PROPOSAL, LeptonInjector, LeptonWeighter, Fennel, Garfield++, DEVSIM and NuCraft are separate projects under their own licenses.
 If you use them in published work, cite them as their authors request.
