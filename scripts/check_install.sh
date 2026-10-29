@@ -83,6 +83,11 @@ fi
 if has_module chromo; then
     check "chromo"    python -c "import chromo; print(chromo.__version__)"
 fi
+if has_module devsim; then
+    # Solves DEVSIM's 1D capacitor example (1 V across a 1 um oxide-like region).
+    # shellcheck disable=SC2016
+    check "DEVSIM"    bash -c 'cd "$(mktemp -d)" && python "$CONDA_PREFIX/devsim_data/examples/capacitance/cap1d.py" 2>&1 | grep -m1 "contact1 charge"'
+fi
 if has_module fennel; then
     check "Fennel"    python -c "import fennel; print('ok')"
 fi
