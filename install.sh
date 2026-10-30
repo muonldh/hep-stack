@@ -145,6 +145,10 @@ fi
 source "$CONDA_BASE/etc/profile.d/conda.sh"
 
 # --- 2. Environment ----------------------------------------------------------
+# Use conda-forge only, with strict channel priority. An existing Anaconda or Miniconda
+# also adds its 'defaults' channel, which makes the solve much larger: on GitHub's
+# Miniconda it ran for 30 minutes and then crashed ("pool whatprovides data overflow").
+export CONDA_CHANNELS=conda-forge CONDA_CHANNEL_PRIORITY=strict
 ENVS="$(conda env list | awk '{print $1}')"
 if grep -qx "$ENV_NAME" <<< "$ENVS"; then
     say "Updating environment '$ENV_NAME' (this can take a few minutes)"

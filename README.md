@@ -321,7 +321,7 @@ cp -r $CONDA_PREFIX/devsim_data/examples ~/devsim-examples
 cd ~/devsim-examples/capacitance && python cap1d.py
 ```
 
-It uses the Intel MKL (installed with the environment) for its linear solvers. Documentation:
+For its linear solvers it uses the Intel MKL that PyTorch brings into the environment. Documentation:
 [devsim.net](https://devsim.net), questions: [forum.devsim.org](https://forum.devsim.org).
 
 ## Machine learning
